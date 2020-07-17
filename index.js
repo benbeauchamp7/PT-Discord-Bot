@@ -3,10 +3,10 @@ const Discord = require('discord.js');
 const bot = new Discord.Client();
 
 // Unique token that allows the bot to login to discord
-const token = 'NzMxNjUxMDE0OTkzNzcyNTc4.XwpRtA.AoGsvBP0Fojr-4038zpY8KCbz2Y';
+const fs = require('fs');
+const token = fs.readFileSync("SecureKey", "utf-8");
 
 // Import all the commands from the commands folder
-const fs = require('fs');
 bot.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
