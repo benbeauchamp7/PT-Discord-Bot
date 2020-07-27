@@ -1,6 +1,6 @@
 // Require discord dependency and create the 'bot' object
 const Discord = require('discord.js');
-const bot = new Discord.Client();
+const bot = new Discord.Client({ patrials: ['REACTION']});
 
 // Unique token that allows the bot to login to discord
 const fs = require('fs');
@@ -106,19 +106,58 @@ bot.on('ready', () => {
     }
 });
 
+// Fires on uncached events as well
+bot.on('raw', packet => {
+    // Only fire on message reactions
+    if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) { return; }
+    
+    // Grab the channel to check the message from
+    bot.channels.fetch(packet.d.channel_id).then(channel => {
+        // Quit if event is already cached
+        if (channel.messages.cache.find(e => e == packet.d.message_id)) { return; }
+        
+        // Fetch uncached channel
+        channel.messages.fetch(packet.d.message_id).then(message => {
+        
+            // Format the emoji
+            const emoji = `${packet.d.emoji.id}`;
+
+            // Grab the reaction object from the message
+            const reaction = message.reactions.cache.get(`${emoji}`);
+
+            // Emit the packet so the reaction event handler can grab it
+            if (packet.t === 'MESSAGE_REACTION_ADD') {
+                bot.emit('messageReactionAdd', reaction, bot.users.cache.get(packet.d.user_id));
+            } else if (packet.t === 'REMOVE') {
+                bot.emit('messageReactionAdd', reaction, bot.users.cache.get(packet.d.user_id));
+            }
+        });
+    });
+    
+
+    
+});
+
 bot.on('voiceStateUpdate', (oldMember, newMember) => {
     // Click to create room functionality
     const channelJoined = newMember.channelID;
     const user = newMember.member
 
-    if (channelJoined === null) {return;}
+    if (channelJoined === null) { return; }
 
     if (channelJoined == config['click-to-join-id']) {
         // If the user isn't on cooldown for creating a room
         if (!isOnCooldown(user.id)) {
             bot.channels.fetch(config['bot-channel-id']).then(chan => {
                 chan.send('Creating Channel...').then(msg => {
-                    bot.commands.get("create").execute(msg, '', config, { bot: bot, user: user });
+                    const options = {
+                        bot: bot,
+                        user: user,
+                        cooldown: cooldownUsers,
+                        type: "auto"
+                    }
+
+                    bot.commands.get("create").execute(msg, '', config, options);
                     msg.delete();
                     cooldownUsers.set(user.id, Date.now());
                 });
@@ -140,7 +179,6 @@ bot.on('channelCreate', chan => {
     } else if (chan instanceof Discord.TextChannel && chan.name.endsWith('-archived')) {
         
         bot.commands.get('end').addArchiveInterval(chan, config, intervalMap);
-        // addArchiveInterval(chan);
     }
 });
 
@@ -189,9 +227,16 @@ bot.on('message', msg => {
             const options = {
                 bot: bot,
                 intervalMap: intervalMap,
-                user: undefined
+                user: msg.author,
+                cooldown: cooldownUsers,
+                type: "text"
             }
-            bot.commands.get(command).execute(msg, args, config, options);
+            isOnCooldown(msg.author.id); // Clear cooldown if applicable
+            bot.commands.get(command).execute(msg, args, config, options).then(isSuccess => {
+                if (isSuccess && command === "create") {
+                    cooldownUsers.set(msg.author.id, Date.now());
+                }
+            });
         } catch (err) {
             if (!otherCommands.includes(msg.content)) {
                 msg.reply('you have written an invalid command, maybe you made a typo?').then(reply => {
@@ -203,6 +248,101 @@ bot.on('message', msg => {
         }
     }
     
+});
+
+// Catch reactions for role assignment
+bot.on('messageReactionAdd', async (reaction, user) => {
+
+    // Fetch the reaction if needed
+    if (reaction.partial) {
+        try { await reaction.fetch() }
+        catch (err) { console.log("Reaction fetch failed, ", err); return; }
+    }
+
+    if (reaction.message.channel.name === "class-enrollment") {
+        reaction.message.guild.members.fetch(user.id).then(member => {
+            switch (reaction._emoji.name) {
+                case '110':
+                    member.roles.add('737104509750214656')
+                    break;
+                case '111':
+                    member.roles.add('737104576012091414')
+                    break;
+                case '121':
+                    member.roles.add('737104605921673298')
+                    break;
+                case '206':
+                    member.roles.add('737104627765608549')
+                    break;
+                case '221':
+                    member.roles.add('737104657469407314')
+                    break;
+                case '222':
+                    member.roles.add('737104680324169810')
+                    break;
+                case '312':
+                    member.roles.add('737104695159554050')
+                    break;
+                case '313':
+                    member.roles.add('737104719335522438')
+                    break;
+                case '314':
+                    member.roles.add('737104737790328873')
+                    break;
+                case '315':
+                    member.roles.add('737104769000276008')
+                    break;
+                                                                                                                                                            
+            }
+        });
+    }
+});
+
+bot.on('messageReactionRemove', async (reaction, user) => {
+
+    // Fetch the reaction if needed
+    if (reaction.partial) {
+        try { await reaction.fetch() }
+        catch (err) { console.log("Reaction fetch failed, ", err); return; }
+    }
+
+    if (reaction.message.channel.name === "class-enrollment") {
+        reaction.message.guild.members.fetch(user.id).then(member => {
+            switch (reaction._emoji.name) {
+                case '110':
+                    member.roles.remove('737104509750214656')
+                    break;
+                case '111':
+                    member.roles.remove('737104576012091414')
+                    break;
+                case '121':
+                    member.roles.remove('737104605921673298')
+                    break;
+                case '206':
+                    member.roles.remove('737104627765608549')
+                    break;
+                case '221':
+                    member.roles.remove('737104657469407314')
+                    break;
+                case '222':
+                    member.roles.remove('737104680324169810')
+                    break;
+                case '312':
+                    member.roles.remove('737104695159554050')
+                    break;
+                case '313':
+                    member.roles.remove('737104719335522438')
+                    break;
+                case '314':
+                    member.roles.remove('737104737790328873')
+                    break;
+                case '315':
+                    member.roles.remove('737104769000276008')
+                    break;
+                                                                                                                                                            
+            }
+        });
+    }
 });
 
 bot.login(token);

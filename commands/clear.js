@@ -2,7 +2,11 @@ const Discord = require("discord.js");
 
 function clearChat(message) {
     // Creates a copy of the channel, then deletes the original
-    message.channel.clone();
+    const pos = message.channel.position
+    message.channel.clone().then(chan => {
+        chan.setPosition(pos);
+    });
+
     message.channel.delete();
 }
 
@@ -31,7 +35,7 @@ function clearStudentRooms(config, bot) {
 module.exports = {
     name: 'clear',
     description: 'clears a text channel',
-    execute(message, args, config, options) {
+    async execute(message, args, config, options) {
         const promptMap = new Map();
         promptMap.set('chat', "This will erase all content in this channel")
         promptMap.set('archives', "This will erase all archived content in the \"Archived Student Rooms\" category")
@@ -48,7 +52,7 @@ module.exports = {
                     reply.delete({"timeout": config['bot-alert-timeout']});
                     message.delete({"timeout": config['bot-alert-timeout']});
                 });
-                return;
+                return false;
             }
 
             if (!(promptMap.has(args))) {
@@ -56,7 +60,7 @@ module.exports = {
                     confirmationMessage.delete({"timeout": config['bot-alert-timeout']});
                     message.delete({"timeout": config['bot-alert-timeout']});
                 });
-                return;
+                return false;
             }
             
             message.reply(promptMap.get(args) + ", type !confirm to continue or !cancel to cancel. The command will cancel automatically if no response is detected in 30 seconds").then(confirmationMessage => {
@@ -85,11 +89,16 @@ module.exports = {
                         message.reply("confirmed!").then(recipt => {
 
                             // Deletion promises set to fail quietly in case the 30 second timeout deletes the messages first
-                            reply.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                            message.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                            confirmationMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                            recipt.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                        })
+                            try {
+                                reply.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                                message.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                                confirmationMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                                if (recipt) {
+                                    recipt.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                                }
+                            } catch (err) {}
+                        });
+                        return true;
 
                     } else if (reply.content.toLowerCase() == "!cancel") {
                         message.reply("Command canceled").then(cancelMessage => {
@@ -101,7 +110,7 @@ module.exports = {
                             cancelMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
 
                         });
-                        return;  
+                        return false;  
                     }
                 });
             }); 
@@ -110,6 +119,8 @@ module.exports = {
                 reply.delete({"timeout": config['bot-alert-timeout']});
                 message.delete({"timeout": config['bot-alert-timeout']});
             });
+
+            return false;
         }
     }
 }

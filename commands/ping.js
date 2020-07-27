@@ -1,7 +1,8 @@
 module.exports = {
     name: 'ping',
     description: 'basic ping command',
-    execute(message, args, config) {
+    async execute(message, args, config) {
         message.channel.send('pong!');
+        return true;
     }
 }

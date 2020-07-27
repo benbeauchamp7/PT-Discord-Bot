@@ -22,7 +22,7 @@ module.exports = {
         
     },
 
-    execute(message, args, config, options) {
+    async execute(message, args, config, options) {
         const timeout = config['bot-alert-timeout'];
         const chan = message.channel;
         if (chan.parent.name.endsWith(config['student-chan-specifier'])) {
@@ -44,12 +44,16 @@ module.exports = {
 
             // Remove the category
             chan.parent.delete();
+
+            return true;
             
         } else {
             message.reply(`You can only use this command in student-created discussion rooms`).then(reply => {
                 reply.delete({'timeout': timeout});
                 message.delete({'timeout': timeout});
             });
+
+            return false;
         }
     }
 }

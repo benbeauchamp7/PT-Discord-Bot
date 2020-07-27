@@ -1,8 +1,10 @@
 module.exports = {
     name: 'create',
     description: 'Makes a set of discussion channels',
-    execute(message, args, config, options) {
+    async execute(message, args, config, options) {
         const user = options.user;
+        const type = options.type;
+        const cooldown = options.cooldown;
         const timeout = config['bot-alert-timeout'];
         const bannedTitleWords = config['banned-title-words']
         const chan = message.channel;
@@ -23,7 +25,19 @@ module.exports = {
                 }
             }
 
-            if (badWordFound === true) { return; }
+            if (badWordFound === true) { return false; }
+
+            // Don't let user create a channel if they are on cooldown
+            if (cooldown.has(user.id)) {
+                const cooldownTime = config['channel-create-cooldown']
+                const timeLeft = cooldownTime - (Date.now() - cooldown.get(user.id));
+                message.reply(`you're on cooldown for creating rooms, try again in ${(timeLeft / 1000).toFixed(0) + 1} seconds`).then(reply => {
+                    reply.delete({'timeout': timeout});
+                    message.delete({'timeout': timeout});
+                });
+
+                return false;
+            }
 
             // Create a category for the student picked topic
             if (args.length === 0) { args = ['Unnamed']; }
@@ -36,7 +50,7 @@ module.exports = {
                 message.guild.channels.create(args.join('-')).then(newTextChan => {
                     newTextChan.setParent(category);
                     newTextChan.send(config["new-chatroom-msg"])
-                    if (user === undefined) {
+                    if (type === "text") {
                         message.reply(`we made your channel <#${newTextChan.id}>, click the link to join!`);
                     }
                 });
@@ -44,17 +58,22 @@ module.exports = {
                 // Create voice channel
                 message.guild.channels.create('Voice', {'type': 'voice'}).then(newVoiceChan => {
                     newVoiceChan.setParent(category);
-                    if (user !== undefined) {
+                    if (type === "auto") {
                         user.voice.setChannel(newVoiceChan.id);
                     }
                 });
+
             });
+
+            return true;
  
         } else {
             message.reply(`You can only use this command in <#${config['create-room-id']}>`).then(reply => {
                 reply.delete({'timeout': timeout});
                 message.delete({'timeout': timeout});
             });
+
+            return false;
         }
     }
 }

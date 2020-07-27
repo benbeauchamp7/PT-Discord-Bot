@@ -1,7 +1,7 @@
 module.exports = {
     name: 'topic',
     description: 'Renames a student chat room set',
-    execute(message, args, config) {
+    async execute(message, args, config) {
 
         const timeout = config['bot-alert-timeout'];
         const bannedTitleWords = config['banned-title-words'];
@@ -21,16 +21,20 @@ module.exports = {
                 }
             }
 
-            if (badWordFound === true) { return; }
+            if (badWordFound === true) { return false; }
 
             chan.parent.setName(args.join(' ') + " " + config['student-chan-specifier']);
             chan.setName(args.join('-'));
+
+            return true;
             
         } else {
             message.reply(`You can only use this command in student-created discussion rooms`).then(reply => {
                 reply.delete({'timeout': timeout});
                 message.delete({'timeout': timeout});
             });
+
+            return false;
         }
     }
 }
