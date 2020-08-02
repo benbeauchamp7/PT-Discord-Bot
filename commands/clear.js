@@ -46,7 +46,7 @@ module.exports = {
         args = args.join(' ');
 
         // Check for elevated roles
-        if (message.member.roles.cache.find(r => r.name === "Peer Teacher" || r.name === "Bot Manager")) {
+        if (message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
 
             // Prevent deletion of the "create-room". This is because the unique id of the room is important for link functionality
             if (args === "chat" && (message.channel.name == "create-room" || message.channel.name == "bot-channel")) {

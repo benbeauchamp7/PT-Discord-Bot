@@ -15,8 +15,8 @@ Second, be sure to use your *real name* (first and last) on the server! You can 
         const t2 = `
         Here are the commands you can use with the queue system.
 > To join: \`!enqueue\` or \`!q\` in a general course text channel
-> To leave: \`!dequeue\` or \`!dq\` in the general course text channel you joined in
-> To view: \`!viewqueue\` or \`!vq\` in a course channel.
+> To leave: \`!dequeue\` or \`!dq\` in a course channel
+> To view: \`!viewqueue\` or \`!vq\` in a course channel
 `
         const t3 = `
         The view command can also be used with arguments to see what order students joined the queue. For example, \`!vq 121 221 312\` will show students who joined first out of the three listed coursees. Furthermore, you can also use \`!vq <PT username>\` to see what order a specific peer teacher will follow when visiting students.

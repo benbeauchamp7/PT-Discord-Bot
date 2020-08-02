@@ -18,7 +18,7 @@ module.exports = {
     },
 
     async execute(message, args, options) {
-        const elevated = message.member.roles.cache.find(r => r.name === "Peer Teacher" || r.name === "Bot Manager");
+        const elevated = message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name));
 
         // Only used in course channels (unless an elevated user)
         if (!elevated && !(message.channel.name in config['course-channels'])) { return false; }

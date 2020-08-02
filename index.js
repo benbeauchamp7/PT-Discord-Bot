@@ -87,7 +87,8 @@ function isOnCooldown(userID) {
     return cooldownUsers.has(userID);
 }
 
-// Declare queue maps
+// Declare queue maps that work in parallel, one containing the times people joined and the other containing the user IDs
+// Each course maps to a basic array acting as a queue, each populated with user ids or time stamps (repsectively)
 var userQueues = new Map();
 var timeJoinedQueues = new Map();
 bot.on('ready', () => {
@@ -116,7 +117,14 @@ bot.on('ready', () => {
 });
 
 // Queueing commands
-function enqueue() {
+function enqueue(msg, args) {
+    let user = Object.assign({}, msg.author);
+
+    // Check for elevated user to allow args
+    if (msg.member.roles.cache.find(r => config['elevated-roles'].includes(r.name)) && args.length !== 0) {
+        // Reassign the user id from the mention
+        user.id = args[0].replace(/[\\<>@#&!]/g, "");
+    }
 
     // Don't let them join a queue if they're already in one
     for (let [temp, list] of userQueues) {
@@ -126,29 +134,40 @@ function enqueue() {
     }
 
     // Get the list then add the new user to the back
+    let course = msg.channel.name;
     let l = userQueues.get(course);
     l.push(user.id)
     userQueues.set(course, l);
 
     // Same thing for time
-    let l = timeJoinedQueues.get(course);
+    l = timeJoinedQueues.get(course);
     l.push(Date.now());
     timeJoinedQueues.set(course, l);
 
     return true;
 }
 
-function dequeue() {
+function dequeue(msg, args) {
+    let user = Object.assign({}, msg.author);
+
+    // Check for elevated user to allow args
+    if (msg.member.roles.cache.find(r => config['elevated-roles'].includes(r.name)) && args.length !== 0) {
+        // Reassign the user id from the mention
+        user.id = args[0].replace(/[\\<>@#&!]/g, "");
+    }
+
     // Find the user
     for (let [course, list] of userQueues) {
         for (let i = 0; i < list.length; i++) {
             if (list.includes(user.id)) {
                 
+                // Remove user id
                 let l = userQueues.get(course);
                 l.splice(i, 1);
                 userQueues.set(course, l);
 
-                let l = timeJoinedQueues.get(course);
+                // Remove user's timestamp
+                l = timeJoinedQueues.get(course);
                 l.splice(i, 1);
                 timeJoinedQueues.set(course, l);
 
@@ -159,12 +178,57 @@ function dequeue() {
 
     // User not found
     return false;
-
-
 }
 
-function viewqueue() {
+function viewqueue(msg, args) {
+    console.log("VQ!")
+    if (args.length === 0) {
+        // None specified, use the current one
+        let order = userQueues.get(msg.channel.name);
 
+        console.log(order);
+
+    } else {
+        // Get all courses specified to join over
+        let users = [];
+        let courses = [];
+        let times = [];
+        for (course of args.split(' ')) {
+            users.push(userQueues.get('csce-' + course));
+            times.push(userQueues.get('csce-' + course));
+            courses.push(course);
+        }
+
+        // Cycle through to find the order
+        let order = [];
+        let min = {
+            u: null,
+            c: null,
+            t: null
+        }
+
+        // In case we run out of users 
+        let abort = false;
+
+        for (let i = 0; i < config['queue-list-amount']; i++) {
+            for (let j = 0; j < courses.length; j++) {
+                if (users[j].length === 0) { continue; }
+
+                if (min.t === null || times[j][0] < min.t) {
+                    // Save the data
+                    min.u = users[j][0];
+                    min.c = courses[j][0];
+                    min.t = times[j][0];
+                }
+            }
+            // Put the user in the merged queue and reset min
+            order.push(Object.assign({}, min));
+            min.u = null; min.c = null; min.t = null;
+        }
+
+        console.log(order);
+
+    }
 }
 
 // Fires on uncached reaction events for course enrollment
@@ -262,7 +326,7 @@ bot.on('message', msg => {
 
     // Chat moderation
     var badWordFound = false;
-    if (doModChat === true) {
+    if (doModChat) {
         for (const badWord of bannedChatWords) {
             if (badWordFound) { break; }
 
@@ -290,13 +354,27 @@ bot.on('message', msg => {
                 intervalMap: intervalMap,
                 user: msg.author,
                 cooldown: cooldownUsers, 
-                queues: queues
             }
             isOnCooldown(msg.author.id); // Clear cooldown if applicable
 
             // Queue commands must be handled seperately (at a higher level than single commands)
-            if (command in ['!enqueue', '!dequeue', '!viewqueue', '!q', '!dq', '!vq']) {
-                command = '!queue'
+            if (['enqueue', 'dequeue', 'viewqueue', 'q', 'dq', 'vq'].includes(command)) {
+                switch (command) {
+                    case 'enqueue':
+                    case 'q':
+                        enqueue(msg, args);
+                        break;
+
+                    case 'viewqueue':
+                    case 'vq':
+                        viewqueue(msg, args);
+                        break;
+
+                    case 'dequeue':
+                    case 'dq':
+                        dequeue(msg, args);
+                        break;
+                }
             } else {
                 bot.commands.get(command).execute(msg, args, options).then(isSuccess => {
                     if (isSuccess && command === "create") {
