@@ -1,28 +1,31 @@
+const fs = require('fs');
+const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+
+function addArchiveInterval(archivedChannel, intervalMap) {
+    console.log(`Archive expiry added to ${archivedChannel.name}`)
+    const intervalID = setInterval(checkArchiveTimeout, config['room-inactivity-update'], archivedChannel, intervalMap);
+    intervalMap.set(archivedChannel.id, intervalID);
+}
+
+function checkArchiveTimeout(archivedChannel, intervalMap) {
+    // If the channel is old enough, delete it
+    archivedChannel.messages.fetch({ limit: 1}).then(msg => {
+        const archiveTime = msg.values().next().value.createdAt;
+        if (archiveTime.getTime() + config['archive-timeout'] < Date.now()) {
+            console.log(`Archive ${archivedChannel.name} deleted`)
+            archivedChannel.delete();
+            clearInterval(intervalMap.get(archivedChannel.id));
+            intervalMap.delete(archivedChannel.id);
+        }
+    })
+    
+}
+
 module.exports = {
     name: 'end',
     description: 'Deletes a set of discussion rooms',
     
-    addArchiveInterval(archivedChannel, config, intervalMap) {
-        console.log(`Archive expiry added to ${archivedChannel.name}`)
-        const intervalID = setInterval(this.checkArchiveTimeout, config['room-inactivity-update'], archivedChannel, config, intervalMap);
-        intervalMap.set(archivedChannel.id, intervalID);
-    },
-
-    checkArchiveTimeout(archivedChannel, config, intervalMap) {
-        // If the channel is old enough, delete it
-        archivedChannel.messages.fetch({ limit: 1}).then(msg => {
-            const archiveTime = msg.values().next().value.createdAt;
-            if (archiveTime.getTime() + config['archive-timeout'] < Date.now()) {
-                console.log(`Archive ${archivedChannel.name} deleted`)
-                archivedChannel.delete();
-                clearInterval(intervalMap.get(archivedChannel.id));
-                intervalMap.delete(archivedChannel.id);
-            }
-        })
-        
-    },
-
-    async execute(message, args, config, options) {
+    async execute(message, args, options) {
         const timeout = config['bot-alert-timeout'];
         const chan = message.channel;
         if (chan.parent.name.endsWith(config['student-chan-specifier'])) {
@@ -36,7 +39,7 @@ module.exports = {
                     deleteChan[1].setParent(config['archive-cat-id']);
                     deleteChan[1].setName(deleteChan[1].name + "-archived");
 
-                    this.addArchiveInterval(chan, config, options.intervalMap);
+                    addArchiveInterval(chan, options.intervalMap);
                 } else {
                     deleteChan[1].delete();
                 }

@@ -1,7 +1,10 @@
+const fs = require('fs');
+const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+
 module.exports = {
     name: 'topic',
     description: 'Renames a student chat room set',
-    async execute(message, args, config) {
+    async execute(message, args) {
 
         const timeout = config['bot-alert-timeout'];
         const bannedTitleWords = config['banned-title-words'];
@@ -10,7 +13,7 @@ module.exports = {
             // Make sure the title doesn't contain bad language
             var badWordFound = false;
             for (const badWord of bannedTitleWords) {
-                for (const userWord  of args) {
+                for (const userWord of args) {
                     if (badWord == userWord.toLowerCase()) {
                         message.reply(`You cannot create a channel with ${badWord} in the name`).then(reply => {
                             reply.delete({'timeout': timeout});

@@ -1,9 +1,12 @@
+const fs = require('fs');
+const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+
 module.exports = {
     name: 'create',
     description: 'Makes a set of discussion channels',
-    async execute(message, args, config, options) {
+    async execute(message, args, options) {
         const user = options.user;
-        const type = options.type;
+        const isAuto = options.auto;
         const cooldown = options.cooldown;
         const timeout = config['bot-alert-timeout'];
         const bannedTitleWords = config['banned-title-words']
@@ -50,7 +53,7 @@ module.exports = {
                 message.guild.channels.create(args.join('-')).then(newTextChan => {
                     newTextChan.setParent(category);
                     newTextChan.send(config["new-chatroom-msg"])
-                    if (type === "text") {
+                    if (isAuto !== undefined) {
                         message.reply(`we made your channel <#${newTextChan.id}>, click the link to join!`);
                     }
                 });
@@ -58,7 +61,7 @@ module.exports = {
                 // Create voice channel
                 message.guild.channels.create('Voice', {'type': 'voice'}).then(newVoiceChan => {
                     newVoiceChan.setParent(category);
-                    if (type === "auto") {
+                    if (isAuto) {
                         user.voice.setChannel(newVoiceChan.id);
                     }
                 });

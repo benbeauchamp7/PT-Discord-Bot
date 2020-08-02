@@ -1,6 +1,6 @@
 // Require discord dependency and create the 'bot' object
 const Discord = require('discord.js');
-const bot = new Discord.Client({ patrials: ['REACTION']});
+const bot = new Discord.Client({ partials: ['REACTION']});
 
 // Unique token that allows the bot to login to discord
 const fs = require('fs');
@@ -23,7 +23,7 @@ const prefix = config['prefix'];
 const doModChat = config['do-moderate-chat'];
 const otherCommands = config['other-commands'];
 
-
+// Handle automatic cleanup of channels
 var intervalMap = new Map();
 var warnMap = new Map();
 function addChanInterval(categoryChannel) {
@@ -56,7 +56,7 @@ function checkChanTimeout(categoryChannel, timeoutID) {
                 const tID = setTimeout(() => {
                     // Use the end command to erase the channel
                     textChan.send("Channel inactive, deleting...").then(deleteMessage => {
-                        bot.commands.get("end").execute(deleteMessage, '', config, { intervalMap: intervalMap });
+                        bot.commands.get("end").execute(deleteMessage, '', { intervalMap: intervalMap });
                         warnMap.delete(categoryChannel.id);
                     });
                 }, config['text-room-timeout-afterwarning']);
@@ -76,6 +76,7 @@ function checkChanTimeout(categoryChannel, timeoutID) {
     }
 }
 
+// Declare cooldown structure
 var cooldownUsers = new Map();
 function isOnCooldown(userID) {
     // Take member of cooldown if enough time has passed
@@ -86,6 +87,9 @@ function isOnCooldown(userID) {
     return cooldownUsers.has(userID);
 }
 
+// Declare queue maps
+var userQueues = new Map();
+var timeJoinedQueues = new Map();
 bot.on('ready', () => {
     // Ping console when bot is ready
     console.log('Bot Ready!');
@@ -100,13 +104,70 @@ bot.on('ready', () => {
             
         } else if (chan[1] instanceof Discord.TextChannel && chan[1].name.endsWith('-archived')) {
             
-            bot.commands.get('end').addArchiveInterval(chan[1], config, intervalMap);
-            // addArchiveInterval(chan[1]);
+            bot.commands.get('end').addArchiveInterval(chan[1], intervalMap);
         }
+    }
+
+    // Set up queue map
+    for (course of config['course-channels']) {
+        userQueues.set(course, []);
+        timeJoinedQueues.set(course, []);
     }
 });
 
-// Fires on uncached events as well
+// Queueing commands
+function enqueue() {
+
+    // Don't let them join a queue if they're already in one
+    for (let [temp, list] of userQueues) {
+        if (list.includes(user.id)) {
+            return false;
+        }
+    }
+
+    // Get the list then add the new user to the back
+    let l = userQueues.get(course);
+    l.push(user.id)
+    userQueues.set(course, l);
+
+    // Same thing for time
+    let l = timeJoinedQueues.get(course);
+    l.push(Date.now());
+    timeJoinedQueues.set(course, l);
+
+    return true;
+}
+
+function dequeue() {
+    // Find the user
+    for (let [course, list] of userQueues) {
+        for (let i = 0; i < list.length; i++) {
+            if (list.includes(user.id)) {
+                
+                let l = userQueues.get(course);
+                l.splice(i, 1);
+                userQueues.set(course, l);
+
+                let l = timeJoinedQueues.get(course);
+                l.splice(i, 1);
+                timeJoinedQueues.set(course, l);
+
+                return true;
+            }
+        }
+    }
+
+    // User not found
+    return false;
+
+
+}
+
+function viewqueue() {
+
+}
+
+// Fires on uncached reaction events for course enrollment
 bot.on('raw', packet => {
     // Only fire on message reactions
     if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) { return; }
@@ -154,10 +215,10 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
                         bot: bot,
                         user: user,
                         cooldown: cooldownUsers,
-                        type: "auto"
+                        auto: true
                     }
 
-                    bot.commands.get("create").execute(msg, '', config, options);
+                    bot.commands.get("create").execute(msg, '', options);
                     msg.delete();
                     cooldownUsers.set(user.id, Date.now());
                 });
@@ -178,7 +239,7 @@ bot.on('channelCreate', chan => {
         addChanInterval(chan);
     } else if (chan instanceof Discord.TextChannel && chan.name.endsWith('-archived')) {
         
-        bot.commands.get('end').addArchiveInterval(chan, config, intervalMap);
+        bot.commands.get('end').addArchiveInterval(chan, intervalMap);
     }
 });
 
@@ -228,15 +289,21 @@ bot.on('message', msg => {
                 bot: bot,
                 intervalMap: intervalMap,
                 user: msg.author,
-                cooldown: cooldownUsers,
-                type: "text"
+                cooldown: cooldownUsers, 
+                queues: queues
             }
             isOnCooldown(msg.author.id); // Clear cooldown if applicable
-            bot.commands.get(command).execute(msg, args, config, options).then(isSuccess => {
-                if (isSuccess && command === "create") {
-                    cooldownUsers.set(msg.author.id, Date.now());
-                }
-            });
+
+            // Queue commands must be handled seperately (at a higher level than single commands)
+            if (command in ['!enqueue', '!dequeue', '!viewqueue', '!q', '!dq', '!vq']) {
+                command = '!queue'
+            } else {
+                bot.commands.get(command).execute(msg, args, options).then(isSuccess => {
+                    if (isSuccess && command === "create") {
+                        cooldownUsers.set(msg.author.id, Date.now());
+                    }
+                });
+            }
         } catch (err) {
             if (!otherCommands.includes(msg.content)) {
                 msg.reply('you have written an invalid command, maybe you made a typo?').then(reply => {
@@ -259,7 +326,7 @@ bot.on('messageReactionAdd', async (reaction, user) => {
         catch (err) { console.log("Reaction fetch failed, ", err); return; }
     }
 
-    if (reaction.message.channel.name === "class-enrollment") {
+    if (reaction.message.channel.name === "course-enrollment") {
         reaction.message.guild.members.fetch(user.id).then(member => {
             switch (reaction._emoji.name) {
                 case '110':
@@ -306,7 +373,7 @@ bot.on('messageReactionRemove', async (reaction, user) => {
         catch (err) { console.log("Reaction fetch failed, ", err); return; }
     }
 
-    if (reaction.message.channel.name === "class-enrollment") {
+    if (reaction.message.channel.name === "course-enrollment") {
         reaction.message.guild.members.fetch(user.id).then(member => {
             switch (reaction._emoji.name) {
                 case '110':

@@ -9,10 +9,10 @@
 ### Commands:
 `!clear chat`
 > Deletes the current channel, and puts a new one in its place
->   
+   
 `!clear archives`
 > Deletes all archives from the "Archived Student Rooms" category
->   
+   
 `!clear student Rooms`
 > Deletes all student-created Rooms
 
@@ -26,3 +26,5 @@
 `!topic [name]`
 > Renames a student meeting room. A name may be rejected if part of the name is found in the banned title words list found in the config.json file
 
+`!enroll`
+> Creates the role assignment message (for hiding/unhiding course specific text channels)

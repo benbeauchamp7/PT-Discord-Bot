@@ -1,4 +1,6 @@
 const Discord = require("discord.js");
+const fs = require('fs');
+const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
 function clearChat(message) {
     // Creates a copy of the channel, then deletes the original
@@ -10,7 +12,7 @@ function clearChat(message) {
     message.channel.delete();
 }
 
-function clearArchives(config, bot) {
+function clearArchives(bot) {
     // Loop through archived channels
     bot.channels.fetch(config['archive-cat-id']).then(cat => {
         for (const chan of cat.children) {
@@ -19,7 +21,7 @@ function clearArchives(config, bot) {
     });
 }
 
-function clearStudentRooms(config, bot) {
+function clearStudentRooms(bot) {
     for (const chan of bot.channels.cache) {
         // If student category
         if (chan[1] instanceof Discord.CategoryChannel && chan[1].name.endsWith(config['student-chan-specifier'])) {
@@ -35,7 +37,7 @@ function clearStudentRooms(config, bot) {
 module.exports = {
     name: 'clear',
     description: 'clears a text channel',
-    async execute(message, args, config, options) {
+    async execute(message, args, options) {
         const promptMap = new Map();
         promptMap.set('chat', "This will erase all content in this channel")
         promptMap.set('archives', "This will erase all archived content in the \"Archived Student Rooms\" category")
@@ -79,10 +81,10 @@ module.exports = {
                                 clearChat(message);
                                 break;
                             case 'archives':
-                                clearArchives(config, options.bot);
+                                clearArchives(options.bot);
                                 break;
                             case 'student rooms':
-                                clearStudentRooms(config, options.bot);
+                                clearStudentRooms(options.bot);
                                 break;
                         }
 
