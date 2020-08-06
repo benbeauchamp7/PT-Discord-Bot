@@ -119,11 +119,39 @@ bot.on('ready', () => {
 // Queueing commands
 function enqueue(msg, args) {
     let user = Object.assign({}, msg.author);
+    let adminQ = false;
 
     // Check for elevated user to allow args
     if (msg.member.roles.cache.find(r => config['elevated-roles'].includes(r.name)) && args.length !== 0) {
-        // Reassign the user id from the mention
-        user.id = args[0].replace(/[\\<>@#&!]/g, "");
+        
+        // If a valid mention
+        if (args[0].match(/^<@!?(\d+)>$/g)) {
+            // Reassign the user id from the mention
+            user.id = args[0].replace(/[\\<>@#&!]/g, "");
+
+            // Attempt a fetch to ensure the user is valid for this guild
+            if (msg.guild.members.cache.get(user.id) === undefined) {
+                msg.reply("that user does not exist").then(reply => {
+                    reply.delete({'timeout': config['bot-alert-timeout']});
+                    msg.delete({'timeout': config['bot-alert-timeout']});
+                });
+                return false;
+            }
+            adminQ = true;
+        } else {
+            msg.reply("invalid argument, use the @ symbol to mention the user you'd like to dequeue").then(reply => {
+                reply.delete({'timeout': config['bot-alert-timeout']});
+                msg.delete({'timeout': config['bot-alert-timeout']});
+            });
+            return false;
+        }
+    } else if (args.length !== 0) {
+        msg.reply("you do not have permission to use arguments with this command").then(reply => {
+            reply.delete({'timeout': config['bot-alert-timeout']});
+            msg.delete({'timeout': config['bot-alert-timeout']});
+        });
+
+        return false;
     }
 
     // Don't let them join a queue if they're already in one
@@ -144,22 +172,63 @@ function enqueue(msg, args) {
     l.push(Date.now());
     timeJoinedQueues.set(course, l);
 
+    let rank = userQueues.get(course).length;
+    let position = "";
+    switch (rank) {
+        case 1:
+            position = "**first**"
+            break;
+        case 2:
+            position = "**second**"
+            break;
+        case 3:
+            position = "**third**"
+            break;
+        default:
+            position = "number *" + rank + "*"
+    }
+
+    if (adminQ) {
+        msg.reply(`we queued ${msg.guild.members.cache.get(user.id)}, they're ${position} in line`);
+    } else {
+        msg.reply(`queued! You're ${position} in line`);
+    }
+
     return true;
 }
 
 function dequeue(msg, args) {
     let user = Object.assign({}, msg.author);
+    let adminDQ = false;
 
     // Check for elevated user to allow args
     if (msg.member.roles.cache.find(r => config['elevated-roles'].includes(r.name)) && args.length !== 0) {
-        // Reassign the user id from the mention
-        user.id = args[0].replace(/[\\<>@#&!]/g, "");
+        
+        // If a valid mention
+        if (args[0].match(/^<@!?(\d+)>$/g)) {
+            // Reassign the user id from the mention
+            user.id = args[0].replace(/[\\<>@#&!]/g, "");
+            adminDQ = true;
+        } else {
+            msg.reply("invalid argument, use the @ symbol to mention the user you'd like to dequeue").then(reply => {
+                reply.delete({'timeout': config['bot-alert-timeout']});
+                msg.delete({'timeout': config['bot-alert-timeout']});
+            });
+            return false;
+        }
+    } else if (args.length !== 0) {
+        msg.reply("you do not have permission to use arguments with this command").then(reply => {
+            reply.delete({'timeout': config['bot-alert-timeout']});
+            msg.delete({'timeout': config['bot-alert-timeout']});
+        });
+
+        return false;
     }
 
     // Find the user
     for (let [course, list] of userQueues) {
         for (let i = 0; i < list.length; i++) {
-            if (list.includes(user.id)) {
+            if (list[i] === user.id) {
                 
                 // Remove user id
                 let l = userQueues.get(course);
@@ -171,31 +240,96 @@ function dequeue(msg, args) {
                 l.splice(i, 1);
                 timeJoinedQueues.set(course, l);
 
+                if (adminDQ) {
+                    msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue`);
+                } else {
+                    msg.reply(`removed! You're no longer queued`);
+                }
+
                 return true;
             }
         }
     }
 
     // User not found
+    if (adminDQ) {
+        msg.reply(`${msg.guild.members.cache.get(user.id)} was not in a queue`).then(reply => {
+            reply.delete({'timeout': config['bot-alert-timeout']});
+            msg.delete({'timeout': config['bot-alert-timeout']});
+        });
+    } else {
+        msg.reply("you were not in a queue (so no action is required)").then(reply => {
+            reply.delete({'timeout': config['bot-alert-timeout']});
+            msg.delete({'timeout': config['bot-alert-timeout']});
+        });
+    }
+
     return false;
 }
 
+function parseTime(time) {
+    let amPm = (time.getHours() > 12 ? 'PM' : 'AM');
+    let hrs = (time.getHours() > 12 ? time.getHours() - 12 : time.getHours());
+    let mins = (time.getMinutes() > 9 ? time.getMinutes() : `0${time.getMinutes()}`)
+    return `${hrs}:${mins} ${amPm}`;
+}
+
 function viewqueue(msg, args) {
-    console.log("VQ!")
+    let queueEmpty = true;
+    let embed = "An error occured while creating the embed"
+
     if (args.length === 0) {
         // None specified, use the current one
-        let order = userQueues.get(msg.channel.name);
+        let userOrder = userQueues.get(msg.channel.name);
+        let timeOrder = timeJoinedQueues.get(msg.channel.name);
 
-        console.log(order);
+        let qNameStr = "";
+        let qTimeStr = "";
+        for (let i = 0; i < userOrder.length; i++) {
+            queueEmpty = false;
+            
+            qNameStr += `${i + 1}. ${msg.guild.members.cache.get(userOrder[i])}\n`
+            let d = new Date(timeOrder[i]);
+            qTimeStr += parseTime(d) + '\n';
+        }
+
+        if (queueEmpty) {
+            embed = new Discord.MessageEmbed()
+                .setColor('#0099ff')
+                .setTitle(`Queue order of ${msg.channel.name.slice(5)}`)
+                .addFields(
+                    { name: 'Status', value: 'Queue is Empty!'}
+                )
+                .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+
+        } else {
+            embed = new Discord.MessageEmbed()
+                .setColor('#0099ff')
+                .setTitle(`Queue order of ${msg.channel.name.slice(5)}`)
+                .addFields(
+                    { name: 'Student', value: qNameStr, inline: true },
+                    { name: 'Queue Time', value: qTimeStr, inline: true }
+                )
+                .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+        }
 
     } else {
         // Get all courses specified to join over
         let users = [];
         let courses = [];
         let times = [];
-        for (course of args.split(' ')) {
-            users.push(userQueues.get('csce-' + course));
-            times.push(userQueues.get('csce-' + course));
+        for (course of args) {
+            try {
+                users.push(JSON.parse(JSON.stringify(userQueues.get('csce-' + course))));
+                times.push(JSON.parse(JSON.stringify(timeJoinedQueues.get('csce-' + course))));
+            } catch (err) {
+                msg.reply(`Unrecognized course, please try again`).then(reply => {
+                    reply.delete({'timeout': timeout});
+                    msg.delete({'timeout': timeout});
+                });
+
+                return false;
+            }
             courses.push(course);
         }
 
@@ -207,27 +341,128 @@ function viewqueue(msg, args) {
             t: null
         }
 
-        // In case we run out of users 
-        let abort = false;
-
         for (let i = 0; i < config['queue-list-amount']; i++) {
+            
+            let minIndex = 0;
             for (let j = 0; j < courses.length; j++) {
+
+                // If a course is out of queue members, skip the course
                 if (users[j].length === 0) { continue; }
 
                 if (min.t === null || times[j][0] < min.t) {
-                    // Save the data
+
+                    // Save the data & move the next person into their place
                     min.u = users[j][0];
-                    min.c = courses[j][0];
+                    min.c = courses[j];
                     min.t = times[j][0];
+
+                    minIndex = j;
                 }
             }
             // Put the user in the merged queue and reset min
-            order.push(Object.assign({}, min));
+            order.push(JSON.parse(JSON.stringify(min)));
             min.u = null; min.c = null; min.t = null;
+            users[minIndex].shift();
+            times[minIndex].shift();
         }
 
-        console.log(order);
+        // Format courses nicely
+        let courseStr = courses[0];
+        for (let i = 1; i < courses.length - 1; i++) {
+            courseStr += ', ' + courses[i];
+        }
 
+        if (courses.length > 1) {
+            courseStr += ' and ' + courses[courses.length - 1];
+        }
+
+        // Format the queue order nicely
+        let qNameStr = "";
+        let qClassStr = "";
+        let qTimeStr = "";
+        let queueEmpty = true;
+        for (let i = 0; i < order.length; i++) {
+            if (order[i].u === null) { break; }
+            queueEmpty = false;
+            
+            qNameStr += `${i + 1}. ${msg.guild.members.cache.get(order[i].u)}\n`
+            qClassStr += `${order[i].c}\n`;
+            let d = new Date(order[i].t);
+            qTimeStr += parseTime(d) + '\n';
+        }
+        
+        if (queueEmpty) {
+            embed = new Discord.MessageEmbed()
+                .setColor('#0099ff')
+                .setTitle(`Queue order of ${courseStr}`)
+                .addFields(
+                    { name: 'Status', value: 'Queue is Empty!'}
+                )
+                .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+
+        } else {
+            embed = new Discord.MessageEmbed()
+                .setColor('#0099ff')
+                .setTitle(`Queue order of ${courseStr}`)
+                .addFields(
+                    { name: 'Student', value: qNameStr, inline: true },
+                    { name: 'Course‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎', value: qClassStr, inline: true },
+                    { name: 'Queue Time', value: qTimeStr, inline: true }
+                )
+                .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+        }
+    }
+
+    msg.channel.send(embed);
+}
+
+function clearqueue(message, args) {
+    if (message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
+        message.reply("this will remove all students from all queues, type !confirm to continue or !cancel to cancel. The command will cancel automatically if no response is detected in 30 seconds").then(confirmationMessage => {
+
+            // Both delete promises fail quietly in case !cancel deletes the messages first
+            confirmationMessage.delete({"timeout": 30000}).catch(() => {});
+            message.delete({"timeout": 30000}).catch(() => {});
+
+            // Set a message collector to look for !confirm or !cancel
+            const collector = new Discord.MessageCollector(message.channel, reply => reply.author.id === message.author.id, {"time": 30000})
+            collector.on('collect', reply => {
+                if (reply.content.toLowerCase() == "!confirm") {
+
+                    // Reinitialize
+                    for (course of config['course-channels']) {
+                        userQueues.set(course, []);
+                        timeJoinedQueues.set(course, []);
+                    }
+
+                    message.reply("confirmed!").then(recipt => {
+
+                        // Deletion promises set to fail quietly in case the 30 second timeout deletes the messages first
+                        try {
+                            reply.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                            message.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                            confirmationMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                            if (recipt) {
+                                recipt.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                            }
+                        } catch (err) {}
+                    });
+                    return true;
+
+                } else if (reply.content.toLowerCase() == "!cancel") {
+                    message.reply("Command canceled").then(cancelMessage => {
+
+                        // Deletion promises set to fail quietly in case the 30 second timeout deletes the messages first
+                        reply.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                        message.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                        confirmationMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                        cancelMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+
+                    });
+                    return false;  
+                }
+            });
+        });
     }
 }
 
@@ -358,7 +593,7 @@ bot.on('message', msg => {
             isOnCooldown(msg.author.id); // Clear cooldown if applicable
 
             // Queue commands must be handled seperately (at a higher level than single commands)
-            if (['enqueue', 'dequeue', 'viewqueue', 'q', 'dq', 'vq'].includes(command)) {
+            if (['enqueue', 'dequeue', 'viewqueue', 'q', 'dq', 'vq', 'clearqueue'].includes(command)) {
                 switch (command) {
                     case 'enqueue':
                     case 'q':
@@ -373,6 +608,10 @@ bot.on('message', msg => {
                     case 'dequeue':
                     case 'dq':
                         dequeue(msg, args);
+                        break;
+
+                    case 'clearqueue':
+                        clearqueue(msg, args);
                         break;
                 }
             } else {

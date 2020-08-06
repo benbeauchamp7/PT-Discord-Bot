@@ -34,7 +34,7 @@ module.exports = {
             if (cooldown.has(user.id)) {
                 const cooldownTime = config['channel-create-cooldown']
                 const timeLeft = cooldownTime - (Date.now() - cooldown.get(user.id));
-                message.reply(`you're on cooldown for creating rooms, try again in ${(timeLeft / 1000).toFixed(0) + 1} seconds`).then(reply => {
+                message.reply(`you're on cooldown for creating rooms, try again in ${(timeLeft / 1000 + 1).toFixed(0)} seconds`).then(reply => {
                     reply.delete({'timeout': timeout});
                     message.delete({'timeout': timeout});
                 });
@@ -53,7 +53,8 @@ module.exports = {
                 message.guild.channels.create(args.join('-')).then(newTextChan => {
                     newTextChan.setParent(category);
                     newTextChan.send(config["new-chatroom-msg"])
-                    if (isAuto !== undefined) {
+                    console.log(isAuto)
+                    if (isAuto === undefined) {
                         message.reply(`we made your channel <#${newTextChan.id}>, click the link to join!`);
                     }
                 });
