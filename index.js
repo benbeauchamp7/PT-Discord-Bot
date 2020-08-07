@@ -276,13 +276,13 @@ function parseTime(time) {
 
 function viewqueue(msg, args) {
     let queueEmpty = true;
-    let embed = "An error occured while creating the embed"
+    let deliverable = "An error occured while creating the embed"
+
+    let userOrder = userQueues.get(msg.channel.name);
+    let timeOrder = timeJoinedQueues.get(msg.channel.name);
 
     if (args.length === 0) {
         // None specified, use the current one
-        let userOrder = userQueues.get(msg.channel.name);
-        let timeOrder = timeJoinedQueues.get(msg.channel.name);
-
         let qNameStr = "";
         let qTimeStr = "";
         for (let i = 0; i < userOrder.length; i++) {
@@ -294,7 +294,7 @@ function viewqueue(msg, args) {
         }
 
         if (queueEmpty) {
-            embed = new Discord.MessageEmbed()
+            deliverable = new Discord.MessageEmbed()
                 .setColor('#0099ff')
                 .setTitle(`Queue order of ${msg.channel.name.slice(5)}`)
                 .addFields(
@@ -303,7 +303,7 @@ function viewqueue(msg, args) {
                 .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
 
         } else {
-            embed = new Discord.MessageEmbed()
+            deliverable = new Discord.MessageEmbed()
                 .setColor('#0099ff')
                 .setTitle(`Queue order of ${msg.channel.name.slice(5)}`)
                 .addFields(
@@ -314,6 +314,55 @@ function viewqueue(msg, args) {
         }
 
     } else {
+        // Discern between mention protocol and course protocol
+        if (args[0].match(/^<@!?(\d+)>$/g)) {
+            // Check for valid mention and for mentioned user's roles
+            const mention = msg.guild.members.cache.get(args[0].replace(/[\\<>@#&!]/g, ""));
+            if (mention === undefined) {
+                msg.reply("that user does not exist").then(reply => {
+                    reply.delete({'timeout': config['bot-alert-timeout']});
+                    msg.delete({'timeout': config['bot-alert-timeout']});
+                });
+                return false;
+
+            } else if (mention.roles.cache.find(r => r.name === "Peer Teacher")) {
+                // Should print the queue using the peer teacher's classes
+                args = [];
+                for (role of mention.roles.cache) {
+                    role = role[1];
+                    if (role.name.startsWith("CSCE")) {
+                        args.push(role.name.substr(role.name.length - 3)) // Gets the number from the role
+                    }
+                }
+                // Code passes through to the bottom
+
+            } else {
+                // Tell them the mentioned's spot in line
+                for (let i = 0; i < userOrder.length; i++) {
+                    if (mention.id === userOrder[i]) {
+                        let position = "";
+                        switch (i + 1) {
+                            case 1:
+                                position = "**first**"
+                                break;
+                            case 2:
+                                position = "**second**"
+                                break;
+                            case 3:
+                                position = "**third**"
+                                break;
+                            default:
+                                position = "number **" + `${i + 1}` + "**"
+                        }
+                        
+                        msg.channel.send(`${mention} is ${position} in line`);
+                        return true;
+                    }
+                }
+            }
+        }
+            
+        // If the code makes it to this point, it means that the above code didn't return. 
         // Get all courses specified to join over
         let users = [];
         let courses = [];
@@ -381,7 +430,8 @@ function viewqueue(msg, args) {
         let qClassStr = "";
         let qTimeStr = "";
         let queueEmpty = true;
-        for (let i = 0; i < order.length; i++) {
+        let i = 0;
+        for (i = 0; i < order.length && i < config['queue-list-amount']; i++) {
             if (order[i].u === null) { break; }
             queueEmpty = false;
             
@@ -390,9 +440,30 @@ function viewqueue(msg, args) {
             let d = new Date(order[i].t);
             qTimeStr += parseTime(d) + '\n';
         }
+
+        // Check if the whole queue isn't displayed
+        if (i <= order.length) {
+            // Want to show the last position
+            let min = null;
+            let minIndex = null;
+            let entriesLeft = 0;
+            for (let j = 0; j < courses.length; j++) {
+                let val = times[j][times[j].length - 1];
+                if (min === null || val < min) {
+                    min = val;
+                    minIndex = j;
+                }
+                entriesLeft += times[j].length;
+            }
+
+            qNameStr += `...\n${i + entriesLeft}. ${msg.guild.members.cache.get(users[minIndex][users[minIndex].length - 1])}\n`
+            qClassStr += `\n${courses[minIndex]}\n`
+            let d = new Date(times[minIndex][0]);
+            qTimeStr += '\n' + parseTime(d) + '\n';
+        }
         
         if (queueEmpty) {
-            embed = new Discord.MessageEmbed()
+            deliverable = new Discord.MessageEmbed()
                 .setColor('#0099ff')
                 .setTitle(`Queue order of ${courseStr}`)
                 .addFields(
@@ -401,7 +472,7 @@ function viewqueue(msg, args) {
                 .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
 
         } else {
-            embed = new Discord.MessageEmbed()
+            deliverable = new Discord.MessageEmbed()
                 .setColor('#0099ff')
                 .setTitle(`Queue order of ${courseStr}`)
                 .addFields(
@@ -413,10 +484,10 @@ function viewqueue(msg, args) {
         }
     }
 
-    msg.channel.send(embed);
+    msg.channel.send(deliverable);
 }
 
-function clearqueue(message, args) {
+function clearqueue(message) {
     if (message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
         message.reply("this will remove all students from all queues, type !confirm to continue or !cancel to cancel. The command will cancel automatically if no response is detected in 30 seconds").then(confirmationMessage => {
 
