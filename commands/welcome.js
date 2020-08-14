@@ -23,7 +23,6 @@ Here are the commands you can use with the queue system.
                     { name: "\u200b", value: `The view command can also be used with arguments to see what order students joined the queue. For example, \`!vq 121 221 312\` will show students who joined first out of the three listed coursees.
 Furthermore, you can also use \`!vq <PT mention>\` to see what order a specific peer teacher will follow when visiting students.
 To see where you are in line, use \`!vq <Self mention>\`\n
-If you'd like to check where you are in line, use \`!vq @me\` and the bot will let you know (this only works for students).
 After some time, inactive users will be removed from the queue- so be sure to stay with your computer while you wait!`},
                     { name: "Office Hours", value: "If you're looking for some 1-on-1 help, <#737074178871787552> has a link to a google Calendar where you can find out when your PTs will be online."},
                     { name: "Aggie Honor Code", value: `Lastly, the Aggie Honor Code applies here, which means:

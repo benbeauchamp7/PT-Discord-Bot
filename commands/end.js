@@ -36,8 +36,9 @@ module.exports = {
 
                     deleteChan[1].send(`***This channel an archive of a previous student chat room. It will remain here for ${config['archive-timeout'] / 1000} seconds after it's archive date before being deleted forever. Be sure to save anything you need!***`);
 
-                    deleteChan[1].setParent(config['archive-cat-id']);
-                    deleteChan[1].lockPermissions();
+                    deleteChan[1].setParent(config['archive-cat-id']).then(movedChan => {
+                        movedChan.lockPermissions();
+                    });
                     deleteChan[1].setName(deleteChan[1].name + "-archived");
 
                     this.addArchiveInterval(chan, options.intervalMap);
