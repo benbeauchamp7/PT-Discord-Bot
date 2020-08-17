@@ -76,6 +76,21 @@ function checkChanTimeout(categoryChannel, timeoutID) {
     }
 }
 
+// Basic messages that expire after a set time
+function timedReply(message, response, time) {
+    message.reply(response).then(reply => {
+        reply.delete({'timeout': time});
+        message.delete({'timeout': time});
+    });
+}
+
+function timedMessage(message, response, time) {
+    message.channel.send(response).then(reply => {
+        reply.delete({'timeout': time});
+        message.delete({'timeout': time});
+    });
+}
+
 // Declare cooldown structure
 var cooldownUsers = new Map();
 function isOnCooldown(userID) {
@@ -131,32 +146,23 @@ function enqueue(msg, args) {
 
             // Attempt a fetch to ensure the user is valid for this guild
             if (msg.guild.members.cache.get(user.id) === undefined) {
-                msg.reply("that user does not exist").then(reply => {
-                    reply.delete({'timeout': config['bot-alert-timeout']});
-                    msg.delete({'timeout': config['bot-alert-timeout']});
-                });
+                timedReply(msg, "that user does not exist", config['bot-alert-timeout'])
                 return false;
             }
             adminQ = true;
         } else {
-            msg.reply("invalid argument, use the @ symbol to mention the user you'd like to dequeue").then(reply => {
-                reply.delete({'timeout': config['bot-alert-timeout']});
-                msg.delete({'timeout': config['bot-alert-timeout']});
-            });
+            timedReply(msg, "invalid argument, use the @ symbol to mention the user you'd like to dequeue", config['bot-alert-timeout'])
             return false;
         }
     } else if (args.length !== 0) {
-        msg.reply("you do not have permission to use arguments with this command").then(reply => {
-            reply.delete({'timeout': config['bot-alert-timeout']});
-            msg.delete({'timeout': config['bot-alert-timeout']});
-        });
-
+        timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout'])
         return false;
     }
 
     // Don't let them join a queue if they're already in one
     for (let [temp, list] of userQueues) {
         if (list.includes(user.id)) {
+            timedReply(msg, `you're already queued in ${temp}, so we couldn't queue you here`, config['bot-alert-timeout'])
             return false;
         }
     }
@@ -210,18 +216,11 @@ function dequeue(msg, args) {
             user.id = args[0].replace(/[\\<>@#&!]/g, "");
             adminDQ = true;
         } else {
-            msg.reply("invalid argument, use the @ symbol to mention the user you'd like to dequeue").then(reply => {
-                reply.delete({'timeout': config['bot-alert-timeout']});
-                msg.delete({'timeout': config['bot-alert-timeout']});
-            });
+            timedReply(msg, "invalid argument, use the @ symbol to mention the user you'd like to dequeue", config['bot-alert-timeout'])
             return false;
         }
     } else if (args.length !== 0) {
-        msg.reply("you do not have permission to use arguments with this command").then(reply => {
-            reply.delete({'timeout': config['bot-alert-timeout']});
-            msg.delete({'timeout': config['bot-alert-timeout']});
-        });
-
+        timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout'])
         return false;
     }
 
@@ -253,15 +252,9 @@ function dequeue(msg, args) {
 
     // User not found
     if (adminDQ) {
-        msg.reply(`${msg.guild.members.cache.get(user.id)} was not in a queue`).then(reply => {
-            reply.delete({'timeout': config['bot-alert-timeout']});
-            msg.delete({'timeout': config['bot-alert-timeout']});
-        });
+        timedReply(msg, `${msg.guild.members.cache.get(user.id)} was not in a queue`, config['bot-alert-timeout'])
     } else {
-        msg.reply("you were not in a queue (so no action is required)").then(reply => {
-            reply.delete({'timeout': config['bot-alert-timeout']});
-            msg.delete({'timeout': config['bot-alert-timeout']});
-        });
+        timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
     }
 
     return false;
@@ -319,10 +312,7 @@ function viewqueue(msg, args) {
             // Check for valid mention and for mentioned user's roles
             const mention = msg.guild.members.cache.get(args[0].replace(/[\\<>@#&!]/g, ""));
             if (mention === undefined) {
-                msg.reply("that user does not exist").then(reply => {
-                    reply.delete({'timeout': config['bot-alert-timeout']});
-                    msg.delete({'timeout': config['bot-alert-timeout']});
-                });
+                timedReply(msg, "that user does not exist", config['bot-alert-timeout'])
                 return false;
 
             } else if (mention.roles.cache.find(r => r.name === "Peer Teacher")) {
@@ -333,6 +323,12 @@ function viewqueue(msg, args) {
                     if (role.name.startsWith("CSCE")) {
                         args.push(role.name.substr(role.name.length - 3)) // Gets the number from the role
                     }
+                }
+
+                // If peer teacher has no classes, fail the command
+                if (args.length === 0) {
+                    timedMessage(msg, `${mention} isn't registered for any classes (maybe they forgot to stop by <#737169678677311578>?)`, config['bot-alert-timeout'])
+                    return false;
                 }
                 // Code passes through to the bottom
 
@@ -353,12 +349,16 @@ function viewqueue(msg, args) {
                                 break;
                             default:
                                 position = "number **" + `${i + 1}` + "**"
+                                break;
                         }
                         
                         msg.channel.send(`${mention} is ${position} in line`);
                         return true;
                     }
                 }
+                // Person not found in this queue
+                msg.channel.send(`${mention} is not in line`);
+                return false;
             }
         }
             
@@ -372,11 +372,7 @@ function viewqueue(msg, args) {
                 users.push(JSON.parse(JSON.stringify(userQueues.get('csce-' + course))));
                 times.push(JSON.parse(JSON.stringify(timeJoinedQueues.get('csce-' + course))));
             } catch (err) {
-                msg.reply(`Unrecognized course, please try again`).then(reply => {
-                    reply.delete({'timeout': timeout});
-                    msg.delete({'timeout': timeout});
-                });
-
+                timedReply(msg, "Unrecognized course, please try again", config['bot-alert-timeout'])
                 return false;
             }
             courses.push(course);
@@ -694,10 +690,7 @@ bot.on('message', msg => {
             }
         } catch (err) {
             if (!otherCommands.includes(msg.content)) {
-                msg.reply('you have written an invalid command, maybe you made a typo?').then(reply => {
-                    reply.delete({'timeout': 10000});
-                    msg.delete({'timeout': 10000});
-                });
+                timedReply(msg, 'you have written an invalid command, maybe you made a typo?', config['bot-alert-timeout'])
                 console.log(err);
             }
         }

@@ -19,7 +19,7 @@
     "ACTUALarchive-timeout-update": 3600000,
     "ACTUALchannel-create-cooldown": 120000,
 
-    "elevated-roles": ["Peer Teacher", "Bot Manager", "Professor"],
+    "elevated-roles": ["Peer Teacher", "Bot Manager", "Professor", "Off the Clock"],
     "queue-list-amount": 10,
 
     "student-chan-specifier": "(Student)",
