@@ -62,7 +62,7 @@ function checkChanTimeout(categoryChannel, timeoutID) {
                 }, config['text-room-timeout-afterwarning']);
 
                 warnMap.set(categoryChannel.id, tID);
-                textChan.send(`This chat will be deleted in ${config['text-room-timeout-afterwarning'] / 1000} seconds due to inactivity. Say something to delay the timer!`)
+                textChan.send(`This chat will be deleted in ${config['text-room-timeout-afterwarning'] / 1000 / 60} minutes due to inactivity. Say something to delay the timer!`)
             }
 
             // Local collector to reset inactivity
