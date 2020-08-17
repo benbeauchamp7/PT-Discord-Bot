@@ -267,6 +267,8 @@ function parseTime(time) {
     return `${hrs}:${mins} ${amPm}`;
 }
 
+// Keeps track of all the basic !vqs to help keep channels clean
+var activeVQs = new Map();
 function viewqueue(msg, args) {
     let queueEmpty = true;
     let deliverable = "An error occured while creating the embed"
@@ -480,7 +482,17 @@ function viewqueue(msg, args) {
         }
     }
 
-    msg.channel.send(deliverable);
+    msg.channel.send(deliverable).then(embed => {
+        if (args.length === 0) {
+            if (activeVQs.has(msg.channel.name)) {
+                for (msgToDelete of activeVQs.get(msg.channel.name)) {
+                    msgToDelete.delete();
+                }
+            }
+            
+            activeVQs.set(msg.channel.name, [msg, embed]);
+        }
+    });
 }
 
 function clearqueue(message) {
