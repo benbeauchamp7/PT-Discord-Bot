@@ -34,7 +34,7 @@ module.exports = {
             for (const deleteChan of chan.parent.children) {
                 if (deleteChan[1].type === "text" && config['do-archive-deletions']) {
 
-                    deleteChan[1].send(`***This channel an archive of a previous student chat room. It will remain here for ${config['archive-timeout'] / 1000 / 60 / 60} hours after it's archive date before being deleted forever. Be sure to save anything you need!***`);
+                    deleteChan[1].send(`***This channel is an archive of a previous student chat room. It will remain here for ${config['archive-timeout'] / 1000 / 60 / 60} hours after its archive date before being deleted forever. Be sure to save anything you need!***`);
 
                     deleteChan[1].setParent(config['archive-cat-id']).then(movedChan => {
                         movedChan.lockPermissions();
