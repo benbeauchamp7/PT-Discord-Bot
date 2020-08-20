@@ -518,7 +518,7 @@ function viewqueue(msg, args) {
         if (args.length === 0) {
             if (activeVQs.has(msg.channel.name)) {
                 for (msgToDelete of activeVQs.get(msg.channel.name)) {
-                    logger.log(`!vq previous in ${courses} deleted`, `${msg.author}`)
+                    logger.log(`!vq previous in ${msg.channel.name} deleted`, `${msg.author}`)
                     msgToDelete.delete();
                 }
             }
@@ -526,6 +526,8 @@ function viewqueue(msg, args) {
             activeVQs.set(msg.channel.name, [msg, embed]);
         }
     });
+
+    return true;
 }
 
 function clearqueue(message) {
