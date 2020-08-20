@@ -819,7 +819,7 @@ bot.on('messageReactionAdd', async (reaction, user) => {
                     break;
                                                                                                                                                             
             }
-            logger.log(`role added`, `<@{user.id}>`);
+            logger.log(`role added`, `<@${user.id}>`);
         });
     }
 });
@@ -867,7 +867,7 @@ bot.on('messageReactionRemove', async (reaction, user) => {
                     break;
                                                                                                                                                             
             }
-            logger.log(`role removed`, `<@{user.id}>`);
+            logger.log(`role removed`, `<@${user.id}>`);
         });
     }
 });
