@@ -1,4 +1,4 @@
-const logger = require('./logging.js');
+const logger = require('../logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
@@ -15,7 +15,7 @@ module.exports = {
                 message.delete({'timeout': config['bot-alert-timeout']});
             });
 
-            logger.log("!offline", `${message.author.name}`)
+            logger.log("!offline", `${message.author}`)
 
             return true;
         }

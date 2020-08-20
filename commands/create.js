@@ -23,7 +23,7 @@ module.exports = {
                             reply.delete({'timeout': timeout});
                             message.delete({'timeout': timeout});
                         });
-                        logger.log("bad word in title creation", `${message.author.name}`);
+                        logger.log("bad word in title creation", `${message.author}`);
                         badWordFound = true;
                     }
                 }
@@ -70,7 +70,7 @@ module.exports = {
 
             });
             
-            logger.log("Channel Created (txt)", `${message.author.name}`)
+            logger.log("Channel Created (txt)", `${message.author}`)
             return true;
  
         } else {
@@ -79,7 +79,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
-            logger.log("!create wrong room", `${message.author.name}`);
+            logger.log("!create wrong room", `${message.author}`);
             return false;
         }
     }

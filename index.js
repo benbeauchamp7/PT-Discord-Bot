@@ -34,7 +34,7 @@ function addChanInterval(categoryChannel) {
     const intervalID = bot.setInterval(checkChanTimeout, config['room-inactivity-update'], categoryChannel);
     intervalMap.set(categoryChannel.id, intervalID);
 
-    logger.log(`Timer added`, `${categoryChannel.name}`);
+    logger.log(`Timer added`, `#${categoryChannel.name}`);
 }
 
 function checkChanTimeout(categoryChannel, timeoutID) {
@@ -63,13 +63,13 @@ function checkChanTimeout(categoryChannel, timeoutID) {
                     textChan.send("Channel inactive, deleting...").then(deleteMessage => {
                         bot.commands.get("end").execute(deleteMessage, '', { intervalMap: intervalMap });
                         warnMap.delete(categoryChannel.id);
-                        logger.log(`Channel deleted`, `${categoryChannel.name}`);
+                        logger.log(`Channel deleted`, `#${categoryChannel.name}`);
                     });
                 }, config['text-room-timeout-afterwarning']);
 
                 warnMap.set(categoryChannel.id, tID);
                 textChan.send(`This chat will be deleted in ${config['text-room-timeout-afterwarning'] / 1000 / 60} minutes due to inactivity. Say something to delay the timer!`)
-                logger.log(`Inactivity warning`, `${categoryChannel.name}`);
+                logger.log(`Inactivity warning`, `#${categoryChannel.name}`);
             }
 
             // Local collector to reset inactivity
@@ -153,18 +153,18 @@ function enqueue(msg, args) {
 
             // Attempt a fetch to ensure the user is valid for this guild
             if (msg.guild.members.cache.get(user.id) === undefined) {
-                logger.log(`!q undefined user [${user.id}]`, `${msg.author.name}`);
+                logger.log(`!q undefined user [${user.id}]`, `${msg.author}`);
                 timedReply(msg, "that user does not exist", config['bot-alert-timeout'])
                 return false;
             }
             adminQ = true;
         } else {
-            logger.log("!q invalid argument (elevated)", `${msg.author.name}`)
+            logger.log("!q invalid argument (elevated)", `${msg.author}`)
             timedReply(msg, "invalid argument, use the @ symbol to mention the user you'd like to dequeue", config['bot-alert-timeout'])
             return false;
         }
     } else if (args.length !== 0) {
-        logger.log("!q insufficient permissions", `${msg.author.name}`)
+        logger.log("!q insufficient permissions", `${msg.author}`)
         timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout'])
         return false;
     }
@@ -172,7 +172,7 @@ function enqueue(msg, args) {
     // Don't let them join a queue if they're already in one
     for (let [temp, list] of userQueues) {
         if (list.includes(user.id)) {
-            logger.log(`!q already queued in ${temp}`, `${msg.author.name}`)
+            logger.log(`!q already queued in ${temp}`, `${msg.author}`)
             timedReply(msg, `you're already queued in ${temp}, so we couldn't queue you here`, config['bot-alert-timeout'])
             return false;
         }
@@ -206,10 +206,10 @@ function enqueue(msg, args) {
     }
 
     if (adminQ) {
-        logger.log(`!q @${msg.guild.members.cache.get(user.id).name} into ${course}`, `${msg.author.name}`)
+        logger.log(`!q @${msg.guild.members.cache.get(user.id).name} into ${course}`, `${msg.author}`)
         msg.reply(`we queued ${msg.guild.members.cache.get(user.id)}, they're ${position} in line`);
     } else {
-        logger.log(`!q self into ${course}`, `${msg.author.name}`)
+        logger.log(`!q self into ${course}`, `${msg.author}`)
         msg.reply(`queued! You're ${position} in line`);
     }
 
@@ -229,12 +229,12 @@ function dequeue(msg, args) {
             user.id = args[0].replace(/[\\<>@#&!]/g, "");
             adminDQ = true;
         } else {
-            logger.log("!q invalid argument (elevated)", `${msg.author.name}`)
+            logger.log("!q invalid argument (elevated)", `${msg.author}`)
             timedReply(msg, "invalid argument, use the @ symbol to mention the user you'd like to dequeue", config['bot-alert-timeout'])
             return false;
         }
     } else if (args.length !== 0) {
-        logger.log("!q insufficient permissions", `${msg.author.name}`)
+        logger.log("!q insufficient permissions", `${msg.author}`)
         timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout'])
         return false;
     }
@@ -255,10 +255,10 @@ function dequeue(msg, args) {
                 timeJoinedQueues.set(course, l);
 
                 if (adminDQ) {
-                    logger.log(`!dq @${msg.guild.members.cache.get(user.id).name} from ${course}`, `${msg.author.name}`)
+                    logger.log(`!dq @${msg.guild.members.cache.get(user.id).name} from ${course}`, `${msg.author}`)
                     msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue`);
                 } else {
-                    logger.log(`!dq self from ${course}`, `${msg.author.name}`)
+                    logger.log(`!dq self from ${course}`, `${msg.author}`)
                     msg.reply(`removed! You're no longer queued`);
                 }
 
@@ -269,10 +269,10 @@ function dequeue(msg, args) {
 
     // User not found
     if (adminDQ) {
-        logger.log(`!dq @${msg.guild.members.cache.get(user.id).name} not in queue`, `${msg.author.name}`)
+        logger.log(`!dq @${msg.guild.members.cache.get(user.id).name} not in queue`, `${msg.author}`)
         timedReply(msg, `${msg.guild.members.cache.get(user.id)} was not in a queue`, config['bot-alert-timeout'])
     } else {
-        logger.log(`!dq self not in queue`, `${msg.author.name}`)
+        logger.log(`!dq self not in queue`, `${msg.author}`)
         timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
     }
 
@@ -316,7 +316,7 @@ function viewqueue(msg, args) {
                 )
                 .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
 
-            logger.log(`!vq std (empty) for ${msg.channel.name.slice(5)}`, `${msg.author.name}`)
+            logger.log(`!vq std (empty) for ${msg.channel.name.slice(5)}`, `${msg.author}`)
 
         } else {
             deliverable = new Discord.MessageEmbed()
@@ -328,7 +328,7 @@ function viewqueue(msg, args) {
                 )
                 .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
 
-            logger.log(`!vq std for ${msg.channel.name.slice(5)} len ${userOrder.length}`, `${msg.author.name}`)
+            logger.log(`!vq std for ${msg.channel.name.slice(5)} len ${userOrder.length}`, `${msg.author}`)
         }
 
     } else {
@@ -337,7 +337,7 @@ function viewqueue(msg, args) {
             // Check for valid mention and for mentioned user's roles
             const mention = msg.guild.members.cache.get(args[0].replace(/[\\<>@#&!]/g, ""));
             if (mention === undefined) {
-                logger.log(`!vq undefined user [${args[0].replace(/[\\<>@#&!]/g, "")}]`, `${msg.author.name}`)
+                logger.log(`!vq undefined user [${args[0].replace(/[\\<>@#&!]/g, "")}]`, `${msg.author}`)
                 timedReply(msg, "that user does not exist", config['bot-alert-timeout'])
                 return false;
 
@@ -353,7 +353,7 @@ function viewqueue(msg, args) {
 
                 // If peer teacher has no classes, fail the command
                 if (args.length === 0) {
-                    logger.log(`!vq ${mention.name} not registered`, `${msg.author.name}`)
+                    logger.log(`!vq ${mention.name} not registered`, `${msg.author}`)
                     timedMessage(msg, `${mention} isn't registered for any classes (maybe they forgot to stop by <#737169678677311578>?)`, config['bot-alert-timeout'])
                     return false;
                 }
@@ -381,13 +381,13 @@ function viewqueue(msg, args) {
                         }
                         
                         msg.channel.send(`${mention} is ${position} in line`);
-                        logger.log(`!vq ${mention.name} in line`, `${msg.author.name}`)
+                        logger.log(`!vq ${mention.name} in line`, `${msg.author}`)
                         return true;
                     }
                 }
                 // Person not found in this queue
                 msg.channel.send(`${mention} is not in line`);
-                logger.log(`!vq ${mention.name} not in line`, `${msg.author.name}`)
+                logger.log(`!vq ${mention.name} not in line`, `${msg.author}`)
                 return false;
             }
         }
@@ -497,7 +497,7 @@ function viewqueue(msg, args) {
                 )
                 .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
 
-            logger.log(`!vq empty for ${courses}`, `${msg.author.name}`)
+            logger.log(`!vq empty for ${courses}`, `${msg.author}`)
 
         } else {
             deliverable = new Discord.MessageEmbed()
@@ -510,7 +510,7 @@ function viewqueue(msg, args) {
                 )
                 .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
             
-            logger.log(`!vq for ${courses}`, `${msg.author.name}`)
+            logger.log(`!vq for ${courses}`, `${msg.author}`)
         }
     }
 
@@ -518,7 +518,7 @@ function viewqueue(msg, args) {
         if (args.length === 0) {
             if (activeVQs.has(msg.channel.name)) {
                 for (msgToDelete of activeVQs.get(msg.channel.name)) {
-                    logger.log(`!vq previous in ${courses} deleted`, `${msg.author.name}`)
+                    logger.log(`!vq previous in ${courses} deleted`, `${msg.author}`)
                     msgToDelete.delete();
                 }
             }
@@ -558,10 +558,10 @@ function clearqueue(message) {
                                 recipt.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
                             }
                         } catch (err) {
-                            logger.log(`!clearq promises threw an error`, `${msg.author.name}`)
+                            logger.log(`!clearq promises threw an error`, `${msg.author}`)
                             logger.logError(err);
                         }
-                        logger.log(`!clearq called`, `${msg.author.name}`)
+                        logger.log(`!clearq called`, `${msg.author}`)
 
                     });
                     return true;
@@ -635,11 +635,11 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
                     msg.delete();
                     cooldownUsers.set(user.id, Date.now());
                 });
-                logger.log("Channel Created (VC)", `${user.name}`)
+                logger.log("Channel Created (VC)", `<@{user.id}>`)
             });
         } else {
             user.voice.setChannel(config['cooldown-channel-id']);
-            logger.log("cooldown hit (VC)", `${user.name}`)
+            logger.log("cooldown hit (VC)", `<@{user.id}>`)
         }
     } else if (warnMap.has(newMember.channel.parentID)) {
         clearTimeout(warnMap.get(newMember.channel.parentID));
@@ -661,8 +661,8 @@ bot.on('channelCreate', chan => {
 // Destory timers on student channels when removed
 bot.on('channelDelete', chan => {
     if (intervalMap.has(chan.id)) {
-        console.log(`Timer deleted from "${chan.name}"`)
-        logger.log("timer deleted", `${chan.name}`)
+        console.log(`Timer deleted from "#${chan.name}"`)
+        logger.log("timer deleted", `#${chan.name}`)
 
         bot.clearInterval(intervalMap.get(chan.id));
         intervalMap.delete(chan.id);
@@ -693,7 +693,7 @@ bot.on('message', msg => {
                         msg.delete({'timeout': 0});
                     });
 
-                    console.log(`blocked ${msg.content}`, `${msg.author.name}`);
+                    console.log(`blocked ${msg.content}`, `${msg.author}`);
 
                     badWordFound = true;
                     break;
@@ -720,38 +720,38 @@ bot.on('message', msg => {
                     case 'enqueue':
                     case 'q':
                         didSucceed = enqueue(msg, args);
-                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author.name}`) }
-                        else { logger.log(`FAIL: ${command}`, `${msg.author.name}`) }
+                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
+                        else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
 
                         break;
 
                     case 'viewqueue':
                     case 'vq':
                         didSucceed = viewqueue(msg, args);
-                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author.name}`) }
-                        else { logger.log(`FAIL: ${command}`, `${msg.author.name}`) }
+                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
+                        else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
 
                         break;
 
                     case 'dequeue':
                     case 'dq':
                         didSucceed = dequeue(msg, args);
-                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author.name}`) }
-                        else { logger.log(`FAIL: ${command}`, `${msg.author.name}`) }
+                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
+                        else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
 
                         break;
 
                     case 'clearqueue':
                         didSucceed = clearqueue(msg, args);
-                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author.name}`) }
-                        else { logger.log(`FAIL: ${command}`, `${msg.author.name}`) }
+                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
+                        else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
 
                         break;
                 }
             } else {
                 bot.commands.get(command).execute(msg, args, options).then(didSucceed => {
-                    if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author.name}`) }
-                    else { logger.log(`FAIL: ${command}`, `${msg.author.name}`) }
+                    if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
+                    else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
 
                     if (didSucceed && command === "create") {
                         cooldownUsers.set(msg.author.id, Date.now());
@@ -762,7 +762,7 @@ bot.on('message', msg => {
             if (!otherCommands.includes(msg.content)) {
                 timedReply(msg, 'you have written an invalid command, maybe you made a typo?', config['bot-alert-timeout']);
 
-                logger.log(`base error thrown CONTENT:${msg.content} |||| CHAN:${msg.channel.name}`, `${msg.author.name}`)
+                logger.log(`base error thrown CONTENT:${msg.content} |||| CHAN:#${msg.channel.name}`, `${msg.author}`)
                 console.log(err);
                 logger.logError(err);
             }
@@ -774,7 +774,7 @@ bot.on('message', msg => {
 // Catch reactions for role assignment
 bot.on('messageReactionAdd', async (reaction, user) => {
     if (reaction === undefined) {
-        logger.log(`reaction undefined`, `${user}`);
+        logger.log(`reaction undefined`, `<@{user.id}>`);
         return;
     }
 
@@ -819,7 +819,7 @@ bot.on('messageReactionAdd', async (reaction, user) => {
                     break;
                                                                                                                                                             
             }
-            logger.log(`role added`, `${user}`);
+            logger.log(`role added`, `<@{user.id}>`);
         });
     }
 });
@@ -867,7 +867,7 @@ bot.on('messageReactionRemove', async (reaction, user) => {
                     break;
                                                                                                                                                             
             }
-            logger.log(`role removed`, `${user}`);
+            logger.log(`role removed`, `<@{user.id}>`);
         });
     }
 });

@@ -1,30 +1,45 @@
 var fs = require('fs');
 
+// Formatting function (placeholder)
+function ph(num) {
+	if (num.toString().length < 2) {
+		return '0' + num.toString();
+	} else {
+		return num.toString()
+	}
+}
+
 module.exports = {
 	getTime: function() {
 		const now = new Date();
-		return `${now.getDate()}/${now.getMonth()}/${now.getFullYear()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`
+		return `${ph(now.getDate())}/${ph(now.getMonth())}/${ph(now.getFullYear())} ${ph(now.getHours())}:${ph(now.getMinutes())}:${ph(now.getSeconds())}`
 	},
 
 	getFilename: function() {
 		const now = new Date();
-		return `${now.getDate()}-${now.getMonth()}-${now.getFullYear()}.log`
+		return `${ph(now.getMonth())}-${ph(now.getDate())}-${ph(now.getFullYear())}.log`
 	},
 
 	getErrFilename: function() {
 		const now = new Date();
-		return `ERROR ${now.getDate()}-${now.getMonth()}-${now.getFullYear()}_${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.log`
+		return `ERROR ${ph(now.getMonth())}-${ph(now.getDate())}-${ph(now.getFullYear())}_${ph(now.getHours())}-${ph(now.getMinutes())}-${ph(now.getSeconds())}.log`
 	},
 
 	log: function(message, user) {
-		fs.appendFile(`./logs/${this.getFilename()}`, `${this.getTime()} [${user}]: ${message}\n`, () => {
-			console.log(">> The file could not be opened <<");
+		fs.appendFile(`./logs/${this.getFilename()}`, `${this.getTime()} [${user}]: ${message}\n`, (error) => {
+			if (error) {
+				console.log(">> The file could not be opened <<");
+				console.log(error)
+			}
 		})
 	},
 
 	logError: function(err) {
-		fs.appendFile(`./logs/${this.getErrFilename()}`, `${err}`, () => {
-			console.log(">> The file could not be opened <<");
+		fs.appendFile(`./logs/${this.getErrFilename()}`, `${err}`, (error) => {
+			if (error) {
+				console.log(">> The file could not be opened <<");
+				console.log(error)
+			}
 		});
 	}
 }

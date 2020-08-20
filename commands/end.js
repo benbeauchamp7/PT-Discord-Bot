@@ -1,4 +1,4 @@
-const logger = require('./logging.js');
+const logger = require('../logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
@@ -7,8 +7,8 @@ module.exports = {
     description: 'Deletes a set of discussion rooms',
 
     addArchiveInterval(archivedChannel, intervalMap) {
-        console.log(`Archive expiry added to ${archivedChannel.name}`)
-        logger.log("Archive expiry added", `${archivedChannel.name}`)
+        console.log(`Archive expiry added to #${archivedChannel.name}`)
+        logger.log("Archive expiry added", `#${archivedChannel.name}`)
 
         const intervalID = setInterval(this.checkArchiveTimeout, config['room-inactivity-update'], archivedChannel, intervalMap);
         intervalMap.set(archivedChannel.id, intervalID);
@@ -19,8 +19,8 @@ module.exports = {
         archivedChannel.messages.fetch({ limit: 1}).then(msg => {
             const archiveTime = msg.values().next().value.createdAt;
             if (archiveTime.getTime() + config['archive-timeout'] < Date.now()) {
-                console.log(`Archive ${archivedChannel.name} deleted`)
-                logger.log("Archive deleted", `${archivedChannel.name}`)
+                console.log(`Archive #${archivedChannel.name} deleted`)
+                logger.log("Archive deleted", `#${archivedChannel.name}`)
 
                 archivedChannel.delete();
                 clearInterval(intervalMap.get(archivedChannel.id));
@@ -63,7 +63,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
-            logger.log("!end wrong room", `${message.author.name}`)
+            logger.log("!end wrong room", `${message.author}`)
             return false;
         }
     }
