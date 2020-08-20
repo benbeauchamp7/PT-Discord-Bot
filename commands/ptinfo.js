@@ -1,3 +1,4 @@
+const logger = require('./logging.js');
 const Discord = require("discord.js");
 
 module.exports = {

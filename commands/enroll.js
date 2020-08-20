@@ -1,3 +1,4 @@
+const logger = require('./logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
@@ -13,6 +14,7 @@ module.exports = {
                 reply.delete({'timeout': timeout});
                 message.delete({'timeout': timeout});
             });
+            logger.log("!enroll insufficient permissions", `${message.author.name}`)
             return;
         }
 
@@ -22,6 +24,7 @@ module.exports = {
                 reply.delete({'timeout': timeout});
                 message.delete({'timeout': timeout});
             });
+            logger.log("!enroll wrong room", `${message.author.name}`)
             return;
         }
 

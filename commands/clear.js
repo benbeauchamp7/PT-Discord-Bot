@@ -1,4 +1,5 @@
 const Discord = require("discord.js");
+const logger = require('./logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
@@ -10,6 +11,7 @@ function clearChat(message) {
     });
 
     message.channel.delete();
+    logger.log("chat cleared", `${message.author.name}`);
 }
 
 function clearArchives(bot) {
@@ -19,6 +21,7 @@ function clearArchives(bot) {
             chan[1].delete();
         }
     });
+    logger.log("archives cleared", `${message.author.name}`);
 }
 
 function clearStudentRooms(bot) {
@@ -32,6 +35,8 @@ function clearStudentRooms(bot) {
             
         }
     }
+
+    logger.log("student rooms cleared", `${message.author.name}`);
 }
 
 module.exports = {
@@ -121,6 +126,8 @@ module.exports = {
                 reply.delete({"timeout": config['bot-alert-timeout']});
                 message.delete({"timeout": config['bot-alert-timeout']});
             });
+
+            logger.log("!clear insufficient permissions", `${message.author.name}`)
 
             return false;
         }

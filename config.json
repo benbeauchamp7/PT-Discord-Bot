@@ -1,5 +1,5 @@
 {
-    "prefix": "!",
+    "prefix": "?",
     "do-moderate-chat": true,
     "do-archive-deletions": true,
 
@@ -22,7 +22,7 @@
     "elevated-roles": ["Peer Teacher", "Bot Manager", "Professor", "Off the Clock"],
     "queue-list-amount": 10,
 
-    "student-chan-specifier": "(Student)",
+    "student-chan-specifier": "(Temporary)",
     "create-room-id": "731922429508583486",
     "archive-cat-id": "731991393798455397",
     "click-to-join-id": "732015234218197122",

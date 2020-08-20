@@ -1,3 +1,4 @@
+const logger = require('./logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
@@ -7,6 +8,8 @@ module.exports = {
 
     addArchiveInterval(archivedChannel, intervalMap) {
         console.log(`Archive expiry added to ${archivedChannel.name}`)
+        logger.log("Archive expiry added", `${archivedChannel.name}`)
+
         const intervalID = setInterval(this.checkArchiveTimeout, config['room-inactivity-update'], archivedChannel, intervalMap);
         intervalMap.set(archivedChannel.id, intervalID);
     },
@@ -17,6 +20,8 @@ module.exports = {
             const archiveTime = msg.values().next().value.createdAt;
             if (archiveTime.getTime() + config['archive-timeout'] < Date.now()) {
                 console.log(`Archive ${archivedChannel.name} deleted`)
+                logger.log("Archive deleted", `${archivedChannel.name}`)
+
                 archivedChannel.delete();
                 clearInterval(intervalMap.get(archivedChannel.id));
                 intervalMap.delete(archivedChannel.id);
@@ -58,6 +63,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
+            logger.log("!end wrong room", `${message.author.name}`)
             return false;
         }
     }

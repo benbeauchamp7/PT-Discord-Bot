@@ -1,3 +1,4 @@
+const logger = require('./logging.js');
 module.exports = {
     name: 'ping',
     description: 'basic ping command',

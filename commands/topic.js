@@ -36,7 +36,8 @@ module.exports = {
                 reply.delete({'timeout': timeout});
                 message.delete({'timeout': timeout});
             });
-
+            
+            logger.log("!topic wrong room", `${message.author.name}`)
             return false;
         }
     }
