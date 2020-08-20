@@ -635,11 +635,11 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
                     msg.delete();
                     cooldownUsers.set(user.id, Date.now());
                 });
-                logger.log("Channel Created (VC)", `<@{user.id}>`)
+                logger.log("Channel Created (VC)", `<@${user.id}>`)
             });
         } else {
             user.voice.setChannel(config['cooldown-channel-id']);
-            logger.log("cooldown hit (VC)", `<@{user.id}>`)
+            logger.log("cooldown hit (VC)", `<@${user.id}>`)
         }
     } else if (warnMap.has(newMember.channel.parentID)) {
         clearTimeout(warnMap.get(newMember.channel.parentID));
@@ -774,7 +774,7 @@ bot.on('message', msg => {
 // Catch reactions for role assignment
 bot.on('messageReactionAdd', async (reaction, user) => {
     if (reaction === undefined) {
-        logger.log(`reaction undefined`, `<@{user.id}>`);
+        logger.log(`reaction undefined`, `<@${user.id}>`);
         return;
     }
 
