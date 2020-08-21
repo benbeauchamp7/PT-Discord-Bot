@@ -115,6 +115,7 @@ var userQueues = new Map();
 var timeJoinedQueues = new Map();
 bot.on('ready', () => {
     // Ping console when bot is ready
+    console.log('Bot Ready!');
     logger.log("Bot Ready", "none");
 
     // Scan for student channels on bot creation
@@ -205,7 +206,7 @@ function enqueue(msg, args) {
     }
 
     if (adminQ) {
-        logger.log(`!q @${msg.guild.members.cache.get(user.id).name} into ${course}`, `${msg.author}`)
+        logger.log(`!q @${user.id} into ${course}`, `${msg.author}`)
         msg.reply(`we queued ${msg.guild.members.cache.get(user.id)}, they're ${position} in line`);
     } else {
         logger.log(`!q self into ${course}`, `${msg.author}`)
@@ -254,7 +255,7 @@ function dequeue(msg, args) {
                 timeJoinedQueues.set(course, l);
 
                 if (adminDQ) {
-                    logger.log(`!dq @${msg.guild.members.cache.get(user.id).name} from ${course}`, `${msg.author}`)
+                    logger.log(`!dq @${user.id} from ${course}`, `${msg.author}`)
                     msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue`);
                 } else {
                     logger.log(`!dq self from ${course}`, `${msg.author}`)
@@ -287,6 +288,17 @@ function parseTime(time) {
 
 // Keeps track of all the basic !vqs to help keep channels clean
 var activeVQs = new Map();
+
+function effectiveLen(obj) {
+    let i = 0;
+    for (item of obj) {
+        if (item.u === null) {
+            return i;
+        }
+        i += 1;
+    }
+}
+
 function viewqueue(msg, args) {
     let queueEmpty = true;
     let deliverable = "An error occured while creating the embed"
@@ -467,7 +479,8 @@ function viewqueue(msg, args) {
         }
 
         // Check if the whole queue isn't displayed
-        if (i <= order.length) {
+        if (i < effectiveLen(order)) {
+            console.log(i, effectiveLen(order), order);
             // Want to show the last position
             let min = null;
             let minIndex = null;
@@ -651,6 +664,7 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
 // Add intervals to new student channels
 bot.on('channelCreate', chan => {
     if (chan instanceof Discord.CategoryChannel && chan.name.endsWith(config['student-chan-specifier'])) {
+        console.log(`Timer added to "${chan.name}"`)
         addChanInterval(chan);
     } else if (chan instanceof Discord.TextChannel && chan.name.endsWith('-archived')) {
         
@@ -661,6 +675,7 @@ bot.on('channelCreate', chan => {
 // Destory timers on student channels when removed
 bot.on('channelDelete', chan => {
     if (intervalMap.has(chan.id)) {
+        console.log(`Timer deleted from "#${chan.name}"`)
         logger.log("timer deleted", `#${chan.name}`)
 
         bot.clearInterval(intervalMap.get(chan.id));
@@ -692,7 +707,7 @@ bot.on('message', msg => {
                         msg.delete({'timeout': 0});
                     });
 
-                    logger.log(`blocked ${msg.content}`, `${msg.author}`);
+                    console.log(`blocked ${msg.content}`, `${msg.author}`);
 
                     badWordFound = true;
                     break;
@@ -762,6 +777,7 @@ bot.on('message', msg => {
                 timedReply(msg, 'you have written an invalid command, maybe you made a typo?', config['bot-alert-timeout']);
 
                 logger.log(`base error thrown CONTENT:${msg.content} |||| CHAN:#${msg.channel.name}`, `${msg.author}`)
+                console.log(err);
                 logger.logError(err);
             }
         }
@@ -779,11 +795,7 @@ bot.on('messageReactionAdd', async (reaction, user) => {
     // Fetch the reaction if needed
     if (reaction.partial) {
         try { await reaction.fetch() }
-        catch (err) { 
-            logger.log("Reaction fetch failed", `${user.id}`); 
-            logger.logError(err);
-            return;
-        }
+        catch (err) { console.log("Reaction fetch failed, ", err); return; }
     }
 
     if (reaction.message.channel.name === "course-enrollment") {
@@ -831,11 +843,7 @@ bot.on('messageReactionRemove', async (reaction, user) => {
     // Fetch the reaction if needed
     if (reaction.partial) {
         try { await reaction.fetch() }
-        catch (err) {
-            logger.log("Reaction fetch failed", `${user.id}`); 
-            logger.logError(err);
-            return;
-        }
+        catch (err) { console.log("Reaction fetch failed, ", err); return; }
     }
 
     if (reaction.message.channel.name === "course-enrollment") {
