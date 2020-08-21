@@ -280,7 +280,7 @@ function dequeue(msg, args) {
 }
 
 function parseTime(time) {
-    let amPm = (time.getHours() > 12 ? 'PM' : 'AM');
+    let amPm = (time.getHours() >= 12 ? 'PM' : 'AM');
     let hrs = (time.getHours() > 12 ? time.getHours() - 12 : time.getHours());
     let mins = (time.getMinutes() > 9 ? time.getMinutes() : `0${time.getMinutes()}`)
     return `${hrs}:${mins} ${amPm}`;
