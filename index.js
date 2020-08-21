@@ -215,7 +215,7 @@ function enqueue(msg, args) {
 
     bot.channels.fetch(config['q-alert-id']).then( channel => {
         const tag = `role-${msg.channel.name.substring(5)}-code`;
-        channel.send(`<@&${config[tag]}>, ${msg.author} has joined the ${msg.channel.name} queue and needs *your* help!`);
+        channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${msg.channel.name} queue and needs *your* help!`);
     });
 
     return true;
