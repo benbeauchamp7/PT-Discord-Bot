@@ -280,6 +280,7 @@ function dequeue(msg, args) {
 }
 
 function parseTime(time) {
+    console.log(time.getHours());
     let amPm = (time.getHours() >= 12 ? 'PM' : 'AM');
     let hrs = (time.getHours() > 12 ? time.getHours() - 12 : time.getHours());
     let mins = (time.getMinutes() > 9 ? time.getMinutes() : `0${time.getMinutes()}`)
@@ -352,7 +353,7 @@ function viewqueue(msg, args) {
                 timedReply(msg, "that user does not exist", config['bot-alert-timeout'])
                 return false;
 
-            } else if (mention.roles.cache.find(r => r.name === "Peer Teacher")) {
+            } else if (mention.roles.cache.find(r => r.name === "Peer Teacher" || r.name === "Off the Clock")) {
                 // Should print the queue using the peer teacher's classes
                 args = [];
                 for (role of mention.roles.cache) {
