@@ -1,5 +1,5 @@
 SecureKey
 node_modules
-logs/*
+logs/
 !logs/.keep
 .vscode/
