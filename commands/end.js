@@ -7,7 +7,6 @@ module.exports = {
     description: 'Deletes a set of discussion rooms',
 
     addArchiveInterval(archivedChannel, intervalMap) {
-        console.log(`Archive expiry added to #${archivedChannel.name}`)
         logger.log("Archive expiry added", `#${archivedChannel.name}`)
 
         const intervalID = setInterval(this.checkArchiveTimeout, config['room-inactivity-update'], archivedChannel, intervalMap);
@@ -19,7 +18,6 @@ module.exports = {
         archivedChannel.messages.fetch({ limit: 1}).then(msg => {
             const archiveTime = msg.values().next().value.createdAt;
             if (archiveTime.getTime() + config['archive-timeout'] < Date.now()) {
-                console.log(`Archive #${archivedChannel.name} deleted`)
                 logger.log("Archive deleted", `#${archivedChannel.name}`)
 
                 archivedChannel.delete();
@@ -33,7 +31,9 @@ module.exports = {
     async execute(message, args, options) {
         const timeout = config['bot-alert-timeout'];
         const chan = message.channel;
+        const parentID = chan.parent.id;
         if (chan.parent.name.endsWith(config['student-chan-specifier'])) {
+            let movePromise = undefined;
 
             // Remove all servers in the same category (archive text channel if applicable)
             for (const deleteChan of chan.parent.children) {
@@ -41,19 +41,28 @@ module.exports = {
 
                     deleteChan[1].send(`***This channel is an archive of a previous student chat room. It will remain here for ${config['archive-timeout'] / 1000 / 60 / 60} hours after its archive date before being deleted forever. Be sure to save anything you need!***`);
 
-                    deleteChan[1].setParent(config['archive-cat-id']).then(movedChan => {
+                    movePromise = deleteChan[1].setParent(config['archive-cat-id']).then(movedChan => {
                         movedChan.lockPermissions();
-                    });
-                    deleteChan[1].setName(deleteChan[1].name + "-archived");
 
-                    this.addArchiveInterval(chan, options.intervalMap);
+                        deleteChan[1].setName(deleteChan[1].name + "-archived");
+                        this.addArchiveInterval(chan, options.intervalMap);
+                    });
+
                 } else {
                     deleteChan[1].delete();
                 }
             }
 
-            // Remove the category
-            chan.parent.delete();
+            // Remove the category last (if the promise is defined)
+            if (movePromise === undefined) {
+                logger.log("channel archive failed", `${chan.name}`)
+                return false;
+            }
+
+            await movePromise;
+            // This is disgusting, but I need to delete the channel by ID and this is how it's done
+            message.guild.channels.resolve(message.guild.channels.resolveID(parentID)).delete();
+            
 
             return true;
             

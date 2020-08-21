@@ -14,7 +14,7 @@ function clearChat(message) {
     logger.log("chat cleared", `${message.author}`);
 }
 
-function clearArchives(bot) {
+function clearArchives(bot, message) {
     // Loop through archived channels
     bot.channels.fetch(config['archive-cat-id']).then(cat => {
         for (const chan of cat.children) {
@@ -86,7 +86,7 @@ module.exports = {
                                 clearChat(message);
                                 break;
                             case 'archives':
-                                clearArchives(options.bot);
+                                clearArchives(options.bot, message);
                                 break;
                             case 'student rooms':
                                 clearStudentRooms(options.bot);
@@ -121,6 +121,8 @@ module.exports = {
                     }
                 });
             }); 
+
+            return true;
         } else {
             message.reply("insufficent permissions.").then(reply => {
                 reply.delete({"timeout": config['bot-alert-timeout']});

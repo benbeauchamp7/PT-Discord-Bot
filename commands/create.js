@@ -1,4 +1,5 @@
 const fs = require('fs');
+const logger = require('../logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
 module.exports = {
@@ -54,7 +55,7 @@ module.exports = {
                 message.guild.channels.create(args.join('-')).then(newTextChan => {
                     newTextChan.setParent(category);
                     newTextChan.send(config["new-chatroom-msg"])
-                    console.log(isAuto)
+
                     if (isAuto === undefined) {
                         message.reply(`we made your channel <#${newTextChan.id}>, click the link to join!`);
                     }

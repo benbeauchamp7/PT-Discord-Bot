@@ -26,6 +26,7 @@ module.exports = {
 	},
 
 	log: function(message, user) {
+		console.log(`${this.getTime()} [${user}]: ${message}`)
 		fs.appendFile(`./logs/${this.getFilename()}`, `${this.getTime()} [${user}]: ${message}\n`, (error) => {
 			if (error) {
 				console.log(">> The file could not be opened <<");
@@ -35,7 +36,8 @@ module.exports = {
 	},
 
 	logError: function(err) {
-		fs.appendFile(`./logs/${this.getErrFilename()}`, `${err}`, (error) => {
+		console.log(`>> ERROR <<\n${err}`)
+		fs.appendFile(`./logs/${this.getErrFilename()}`, `${err}\n${err.stack}`, (error) => {
 			if (error) {
 				console.log(">> The file could not be opened <<");
 				console.log(error)
