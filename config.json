@@ -28,6 +28,18 @@
     "click-to-join-id": "732015234218197122",
     "bot-channel-id": "732033271642193940",
     "cooldown-channel-id": "732049254478118922",
+    "q-alert-id": "746422329973932202",
+
+    "role-110-code": "737104509750214656",
+    "role-111-code": "737104576012091414",
+    "role-121-code": "737104605921673298",
+    "role-206-code": "737104627765608549",
+    "role-221-code": "737104657469407314",
+    "role-222-code": "737104680324169810",
+    "role-312-code": "737104695159554050",
+    "role-313-code": "737104719335522438",
+    "role-314-code": "737104737790328873",
+    "role-315-code": "737104769000276008",
 
     "new-chatroom-msg": "You can use !topic to rename this channel if your discussion changes topics. When done, use !end to close the chat room.",
 

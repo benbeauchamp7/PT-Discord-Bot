@@ -213,6 +213,11 @@ function enqueue(msg, args) {
         msg.reply(`queued! You're ${position} in line`);
     }
 
+    bot.channels.fetch(config['q-alert-id']).then( channel => {
+        const tag = `role-${msg.channel.name.substring(5)}-code`;
+        channel.send(`<@&${config[tag]}>, ${msg.author} has joined the ${msg.channel.name} queue and needs *your* help!`);
+    });
+
     return true;
 }
 
@@ -801,39 +806,7 @@ bot.on('messageReactionAdd', async (reaction, user) => {
 
     if (reaction.message.channel.name === "course-enrollment") {
         reaction.message.guild.members.fetch(user.id).then(member => {
-            switch (reaction._emoji.name) {
-                case '110':
-                    member.roles.add('737104509750214656')
-                    break;
-                case '111':
-                    member.roles.add('737104576012091414')
-                    break;
-                case '121':
-                    member.roles.add('737104605921673298')
-                    break;
-                case '206':
-                    member.roles.add('737104627765608549')
-                    break;
-                case '221':
-                    member.roles.add('737104657469407314')
-                    break;
-                case '222':
-                    member.roles.add('737104680324169810')
-                    break;
-                case '312':
-                    member.roles.add('737104695159554050')
-                    break;
-                case '313':
-                    member.roles.add('737104719335522438')
-                    break;
-                case '314':
-                    member.roles.add('737104737790328873')
-                    break;
-                case '315':
-                    member.roles.add('737104769000276008')
-                    break;
-                                                                                                                                                            
-            }
+            member.roles.add(config[`role-${reaction._emoji.name}-code`]);
             logger.log(`role added`, `<@${user.id}>`);
         });
     }
@@ -849,39 +822,7 @@ bot.on('messageReactionRemove', async (reaction, user) => {
 
     if (reaction.message.channel.name === "course-enrollment") {
         reaction.message.guild.members.fetch(user.id).then(member => {
-            switch (reaction._emoji.name) {
-                case '110':
-                    member.roles.remove('737104509750214656')
-                    break;
-                case '111':
-                    member.roles.remove('737104576012091414')
-                    break;
-                case '121':
-                    member.roles.remove('737104605921673298')
-                    break;
-                case '206':
-                    member.roles.remove('737104627765608549')
-                    break;
-                case '221':
-                    member.roles.remove('737104657469407314')
-                    break;
-                case '222':
-                    member.roles.remove('737104680324169810')
-                    break;
-                case '312':
-                    member.roles.remove('737104695159554050')
-                    break;
-                case '313':
-                    member.roles.remove('737104719335522438')
-                    break;
-                case '314':
-                    member.roles.remove('737104737790328873')
-                    break;
-                case '315':
-                    member.roles.remove('737104769000276008')
-                    break;
-                                                                                                                                                            
-            }
+            member.roles.remove(config[`role-${reaction._emoji.name}-code`]);
             logger.log(`role removed`, `<@${user.id}>`);
         });
     }
