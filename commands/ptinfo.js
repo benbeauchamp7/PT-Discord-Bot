@@ -44,7 +44,11 @@ module.exports = {
 \n\`!end\`
 > When used in a student created room, immediately ends the room and archives it
 \n\`!topic [name]\`
-> When used in a student create room, this command renames the room (in case of a topic change)
+> When used in a temporary room, this command renames the room (in case of a topic change)
+\n\`!lock\`
+> When used in a temporary room, this command prevents students not in the cooresponding voice channel from joining. In other words, it locks everyone else out (staff may still join the room).
+\n\`!unlock\`
+> When used in a temporary room, this command allows anyone to join the cooresponding voice channel.
 					`}
                 )
 
