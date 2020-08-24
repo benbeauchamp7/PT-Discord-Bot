@@ -15,7 +15,7 @@ bot.on('ready', () => {
     if (fs.readFileSync('./timesheetNotification/doTimesheetNotify', 'utf-8') === "true") {
         fs.writeFileSync('./timesheetNotification/doTimesheetNotify', 'false', 'utf-8');
 
-        bot.channels.fetch('746422329973932202').then(chan => {
+        bot.channels.fetch('743606275887333550').then(chan => {
             chan.send("@everyone timesheets due tonight at 5PM, be sure to get them in!").then(() => {
                 exit();
             })
