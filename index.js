@@ -408,6 +408,11 @@ function viewqueue(msg, args) {
                 return false;
             }
         }
+
+        if (args[0] == 'all') {
+            // emote-names just happens to have a list of all the courses
+            args = config['emote-names'];
+        }
             
         // If the code makes it to this point, it means that the above code didn't return. 
         // Get all courses specified to join over
@@ -578,7 +583,7 @@ function clearqueue(message) {
                                 recipt.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
                             }
                         } catch (err) {
-                            logger.log(`!clearq promises threw an error`, `${msg.author}`)
+                            logger.log(`ERROR: !clearq promises threw an error`, `${msg.author}`)
                             logger.logError(err);
                         }
                         logger.log(`!clearq called`, `${msg.author}`)
@@ -782,8 +787,7 @@ bot.on('message', msg => {
             if (!otherCommands.includes(msg.content)) {
                 timedReply(msg, 'you have written an invalid command, maybe you made a typo?', config['bot-alert-timeout']);
 
-                logger.log(`base error thrown CONTENT:${msg.content} |||| CHAN:#${msg.channel.name}`, `${msg.author}`)
-                console.log(err);
+                logger.log(`ERROR: base error thrown CONTENT:${msg.content} |||| CHAN:#${msg.channel.name}`, `${msg.author}`)
                 logger.logError(err);
             }
         }
