@@ -37,30 +37,30 @@ module.exports = {
 
             // Remove all servers in the same category (archive text channel if applicable)
             for (const deleteChan of chan.parent.children) {
-                if (deleteChan[1].type === "text" && config['do-archive-deletions']) {
-
+                if (args === ['now'] || chan.name === "unnamed" || !(deleteChan[1].type === "text" && config['do-archive-deletions'])) {
+                    deleteChan[1].delete();
+                } else {
                     deleteChan[1].send(`***This channel is an archive of a previous student chat room. It will remain here for ${config['archive-timeout'] / 1000 / 60 / 60} hours after its archive date before being deleted forever. Be sure to save anything you need!***`);
-
+                
                     movePromise = deleteChan[1].setParent(config['archive-cat-id']).then(movedChan => {
                         movedChan.lockPermissions();
-
+                        
                         deleteChan[1].setName(deleteChan[1].name + "-archived");
                         this.addArchiveInterval(chan, options.intervalMap);
                     });
-
-                } else {
-                    deleteChan[1].delete();
                 }
             }
 
             // Remove the category last (if the promise is defined)
             if (movePromise === undefined) {
-                logger.log("channel archive failed", `${chan.name}`)
-                return false;
+                logger.log("deleted immediately", `${chan.name}`);
+                message.guild.channels.resolve(message.guild.channels.resolveID(parentID)).delete();
+                return true;
             }
 
             await movePromise;
             // This is disgusting, but I need to delete the channel by ID and this is how it's done
+            logger.log("archived", `${chan.name}`);
             message.guild.channels.resolve(message.guild.channels.resolveID(parentID)).delete();
             
 

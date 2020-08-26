@@ -27,7 +27,7 @@ module.exports = {
 
 	log: function(message, user) {
 		console.log(`${this.getTime()} [${user}]: ${message}`)
-		fs.appendFile(`./logs/${this.getFilename()}`, `${this.getTime()} [${user}]: ${message}\n`, (error) => {
+		fs.appendFile(`./logs/${this.getFilename()}`, `${this.getTime()} [${(user.charAt(0) === '#') ? `'${user}'` : user}]: ${message}\n`, (error) => {
 			if (error) {
 				console.log(">> The file could not be opened <<");
 				console.log(error)

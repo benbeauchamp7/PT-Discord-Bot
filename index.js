@@ -37,7 +37,7 @@ function addChanInterval(categoryChannel) {
     logger.log(`Timer added`, `#${categoryChannel.name}`);
 }
 
-function checkChanTimeout(categoryChannel, timeoutID) {
+function checkChanTimeout(categoryChannel) {
 
     // Get the channels from the student category
     var textChan, voiceChan;
