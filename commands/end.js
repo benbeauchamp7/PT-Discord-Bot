@@ -37,9 +37,10 @@ module.exports = {
 
             // Remove all servers in the same category (archive text channel if applicable)
             for (const deleteChan of chan.parent.children) {
-                if (args === ['now'] || chan.name === "unnamed" || !(deleteChan[1].type === "text" && config['do-archive-deletions'])) {
+                if (args.includes('now') || chan.name === "unnamed" || !(deleteChan[1].type === "text" && config['do-archive-deletions'])) {
                     deleteChan[1].delete();
                 } else {
+                    console.log(args)
                     deleteChan[1].send(`***This channel is an archive of a previous student chat room. It will remain here for ${config['archive-timeout'] / 1000 / 60 / 60} hours after its archive date before being deleted forever. Be sure to save anything you need!***`);
                 
                     movePromise = deleteChan[1].setParent(config['archive-cat-id']).then(movedChan => {
