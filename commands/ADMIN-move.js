@@ -82,6 +82,10 @@ module.exports = {
             timedReply(message, "user not found, command failed", config["bot-alert-timeout"]);
             return false;
 
+        } else if (member.id === message.author.id) {
+            timedReply(message, "you cannot use an admin command on yourself", config["bot-alert-timeout"]);
+            return false;
+
         } else if (destination === undefined) {
             timedReply(message, "channel not found, command failed", config["bot-alert-timeout"]);
             return false;

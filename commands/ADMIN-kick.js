@@ -43,6 +43,10 @@ module.exports = {
             timedReply(message, "user not found, command failed", config["bot-alert-timeout"]);
             return false;
 
+        } else if (member.id === message.author.id) {
+            timedReply(message, "you cannot use an admin command on yourself", config["bot-alert-timeout"]);
+            return false;
+
         } else if (member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
             timedReply(message, "you cannot kick another elevated user. This action was reported to moderators", config["bot-alert-timeout"]);
             report(message, message.author, member);
