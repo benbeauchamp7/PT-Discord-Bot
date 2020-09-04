@@ -14,6 +14,7 @@
 
     "room-inactivity-update": 300000,
     "text-room-timeout": 1200000,
+    "sticky-text-room-timeout": 7200000,
     "text-room-timeout-afterwarning": 300000,
     "archive-timeout": 86400000,
     "archive-timeout-update": 3600000,
@@ -23,10 +24,13 @@
     "queue-list-amount": 10,
 
     "student-chan-specifier": "(Temporary)",
+
     "create-room-id": "731922429508583486",
     "archive-cat-id": "746173443438805002",
     "click-to-join-id": "732015234218197122",
     "bot-channel-id": "732033271642193940",
+    "infraction-chan-id": "751229287092322335",
+    "bot-manager-role-id": "731673496656019457",
     "cooldown-channel-id": "732049254478118922",
     "q-alert-id": "746422329973932202",
 

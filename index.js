@@ -285,7 +285,6 @@ function dequeue(msg, args) {
 }
 
 function parseTime(time) {
-    console.log(time.getHours());
     let amPm = (time.getHours() >= 12 ? 'PM' : 'AM');
     let hrs = (time.getHours() > 12 ? time.getHours() - 12 : time.getHours());
     let mins = (time.getMinutes() > 9 ? time.getMinutes() : `0${time.getMinutes()}`)
@@ -350,9 +349,16 @@ function viewqueue(msg, args) {
 
     } else {
         // Discern between mention protocol and course protocol
-        if (args[0].match(/^<@!?(\d+)>$/g)) {
-            // Check for valid mention and for mentioned user's roles
-            const mention = msg.guild.members.cache.get(args[0].replace(/[\\<>@#&!]/g, ""));
+        if (args[0].match(/^<@!?(\d+)>$/g) || args[0] == 'me') {
+
+            let mention = undefined;
+            if (args[0] == 'me') {
+                mention = msg.guild.members.cache.get(msg.author.id);
+            } else {
+                // Check for valid mention and for mentioned user's roles if mention
+                mention = msg.guild.members.cache.get(args[0].replace(/[\\<>@#&!]/g, ""));
+            }
+
             if (mention === undefined) {
                 logger.log(`!vq undefined user [${args[0].replace(/[\\<>@#&!]/g, "")}]`, `${msg.author}`)
                 timedReply(msg, "that user does not exist", config['bot-alert-timeout'])
@@ -491,7 +497,6 @@ function viewqueue(msg, args) {
 
         // Check if the whole queue isn't displayed
         if (i < effectiveLen(order)) {
-            console.log(i, effectiveLen(order), order);
             // Want to show the last position
             let min = null;
             let minIndex = null;
@@ -799,6 +804,9 @@ bot.on('message', msg => {
 bot.on('messageReactionAdd', async (reaction, user) => {
     if (reaction === undefined) {
         logger.log(`reaction undefined`, `<@${user.id}>`);
+        return;
+    } else if (user.id === undefined) {
+        logger.log(`user id undefined`, `<@${reaction}>`);
         return;
     }
 
