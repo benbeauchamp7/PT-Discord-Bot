@@ -37,7 +37,7 @@ function addChanInterval(categoryChannel) {
     logger.log(`Timer added`, `#${categoryChannel.name}`);
 }
 
-function checkChanTimeout(categoryChannel) {
+async function checkChanTimeout(categoryChannel) {
 
     // Get the channels from the student category
     var textChan, voiceChan;
@@ -50,8 +50,17 @@ function checkChanTimeout(categoryChannel) {
     }
     
     // If the text channel has been inactive for the configurable time
-    if (textChan.name.endsWith(config["student-chan-specifier"]) && textChan.lastMessage.createdAt.getTime() + config['text-room-timeout'] < Date.now()
-    ||  textChan.name.endsWith(config["sticky-chan-specifier"]) && textChan.lastMessage.createdAt.getTime() + config['sticky-room-timeout'] < Date.now()) {
+    // console.log(textChan.lastMessage)
+    let last = await textChan.messages.fetch({limit: 1});
+    last = last.first();
+
+    console.log(textChan.parent.name.endsWith(config["student-chan-specifier"]))
+    console.log(last.createdAt.getTime() + config['text-room-timeout'] < Date.now())
+    console.log(textChan.parent.name.endsWith(config["sticky-chan-specifier"]))
+    console.log(last.createdAt.getTime() + config['sticky-room-timeout'] < Date.now())
+
+    if ( (textChan.parent.name.endsWith(config["student-chan-specifier"]) && last.createdAt.getTime() + config['text-room-timeout'] < Date.now())
+    ||  (textChan.parent.name.endsWith(config["sticky-chan-specifier"]) && last.createdAt.getTime() + config['sticky-room-timeout'] < Date.now()) ) {
 
         // And the cooresponding voice channel is also empty
         if (voiceChan.members.size === 0) {

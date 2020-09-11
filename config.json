@@ -1,12 +1,12 @@
 {
-    "prefix": "!",
+    "prefix": "?",
     "do-moderate-chat": true,
     "do-archive-deletions": true,
 
     "bot-alert-timeout": 10000,
 
     "TESTINGroom-inactivity-update": 3000,
-    "TESTINGtext-room-timeout": 5000,
+    "TESTINGtext-room-timeout": 15000,
     "TESTINGtext-room-timeout-afterwarning": 3000,
     "TESTINGarchive-timeout": 30000,
     "TESTINGarchive-timeout-update": 1000,
@@ -21,13 +21,11 @@
     "elevated-roles": ["Peer Teacher", "Bot Manager", "Professor", "Off the Clock"],
     "queue-list-amount": 10,
 
-    "student-chan-specifier": "(Temporary)",
+    "student-chan-specifier": "(Test)",
     "text-room-timeout": 1200000,
 
-    "sticky-chan-specifier": "(PT)",
+    "sticky-chan-specifier": "(PT-TEST)",
     "sticky-room-timeout": 7200000,
-
-    "temp-chans": ["(Temporary)", "(PT)"],
 
     "create-room-id": "731922429508583486",
     "archive-cat-id": "746173443438805002",
