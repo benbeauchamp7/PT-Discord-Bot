@@ -32,8 +32,19 @@ module.exports = {
         const timeout = config['bot-alert-timeout'];
         const chan = message.channel;
         const parentID = chan.parent.id;
-        if (chan.parent.name.endsWith(config['student-chan-specifier'])) {
+        if (chan.parent.name.endsWith(config['student-chan-specifier']) || chan.parent.name.endsWith(config['sticky-chan-specifier'])) {
             let movePromise = undefined;
+
+            if (chan.name.endsWith(config['sticky-chan-specifier']) && !msg.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
+                
+                message.reply(`you do not have permission to end a PT room`).then(reply => {
+                    reply.delete({'timeout': timeout});
+                    message.delete({'timeout': timeout});
+                });
+
+                logger.log("PT !end failed (insufficent perms)", `${message.author}`);
+                return false;
+            }
 
             // Remove all servers in the same category (archive text channel if applicable)
             for (const deleteChan of chan.parent.children) {

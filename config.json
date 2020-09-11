@@ -13,8 +13,6 @@
     "TESTINGchannel-create-cooldown": 10000,
 
     "room-inactivity-update": 300000,
-    "text-room-timeout": 1200000,
-    "sticky-text-room-timeout": 7200000,
     "text-room-timeout-afterwarning": 300000,
     "archive-timeout": 86400000,
     "archive-timeout-update": 3600000,
@@ -24,6 +22,12 @@
     "queue-list-amount": 10,
 
     "student-chan-specifier": "(Temporary)",
+    "text-room-timeout": 1200000,
+
+    "sticky-chan-specifier": "(PT)",
+    "sticky-room-timeout": 7200000,
+
+    "temp-chans": ["(Temporary)", "(PT)"],
 
     "create-room-id": "731922429508583486",
     "archive-cat-id": "746173443438805002",
@@ -44,6 +48,8 @@
     "role-313-code": "737104719335522438",
     "role-314-code": "737104737790328873",
     "role-315-code": "737104769000276008",
+
+    "role-q-code": "753784888603181157",
 
     "new-chatroom-msg": "You can use !topic to rename this channel if your discussion changes topics. When done, use !end to close the chat room.",
 

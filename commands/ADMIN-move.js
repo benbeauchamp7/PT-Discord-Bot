@@ -19,7 +19,7 @@ function getChanFromLink(msg, mention) {
         let chanID = mention.replace(/[\\<>@#&!]/g, "");
         let parent = msg.guild.channels.cache.get(chanID).parent;
 
-        if (!parent.name.endsWith(config['student-chan-specifier'])) {
+        if (!parent.name.endsWith(config['student-chan-specifier']) && !parent.name.endsWith(config['sticky-chan-specifier'])) {
             return "Invalid Room";
         }
 

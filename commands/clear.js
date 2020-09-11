@@ -27,7 +27,7 @@ function clearArchives(bot, message) {
 function clearStudentRooms(bot) {
     for (const chan of bot.channels.cache) {
         // If student category
-        if (chan[1] instanceof Discord.CategoryChannel && chan[1].name.endsWith(config['student-chan-specifier'])) {
+        if (chan[1] instanceof Discord.CategoryChannel && (chan[1].name.endsWith(config['student-chan-specifier'] || chan[1].name.endsWith(config['sticky-chan-specifier'])))) {
             for (const child of chan[1].children) {
                 child[1].delete()
             }

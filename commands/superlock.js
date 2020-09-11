@@ -20,7 +20,7 @@ module.exports = {
 
             // Used in a temp set
             const parent = message.channel.parent;
-            if (parent.name.endsWith(config['student-chan-specifier'])) {
+            if (parent.name.endsWith(config['student-chan-specifier'] || chan.name.endsWith(config['sticky-chan-specifier']))) {
 
                 // While in a matching voice channel
                 let voiceChan = message.member.voice.channel;

@@ -50,8 +50,8 @@ function checkChanTimeout(categoryChannel) {
     }
     
     // If the text channel has been inactive for the configurable time
-    if ((textChan.lastMessage === null) && textChan.createdAt.getTime() + config['text-room-timeout']*2 < Date.now()
-    || (textChan.lastMessage !== null) && textChan.lastMessage.createdAt.getTime() + config['text-room-timeout'] < Date.now()) {
+    if (textChan.name.endsWith(config["student-chan-specifier"]) && textChan.lastMessage.createdAt.getTime() + config['text-room-timeout'] < Date.now()
+    ||  textChan.name.endsWith(config["sticky-chan-specifier"]) && textChan.lastMessage.createdAt.getTime() + config['sticky-room-timeout'] < Date.now()) {
 
         // And the cooresponding voice channel is also empty
         if (voiceChan.members.size === 0) {
@@ -121,7 +121,7 @@ bot.on('ready', () => {
     // Scan for student channels on bot creation
     for (const chan of bot.channels.cache) {
         // If student category
-        if (chan[1] instanceof Discord.CategoryChannel && chan[1].name.endsWith(config['student-chan-specifier'])) {
+        if (chan[1] instanceof Discord.CategoryChannel && (chan[1].name.endsWith(config['student-chan-specifier'] || chan[1].name.endsWith(config['sticky-chan-specifier'])))) {
             // Create interval for the channels
             addChanInterval(chan[1]);
             
@@ -202,8 +202,11 @@ function enqueue(msg, args) {
             position = "**third**"
             break;
         default:
-            position = "number *" + rank + "*"
+            position = "number **" + rank + "**"
     }
+
+    // Give them the queued role
+    msg.guild.members.cache.get(user.id).roles.add(config['role-q-code']);
 
     if (adminQ) {
         logger.log(`!q @${user.id} into ${course}`, `${msg.author}`)
@@ -259,6 +262,9 @@ function dequeue(msg, args) {
                 l.splice(i, 1);
                 timeJoinedQueues.set(course, l);
 
+                // Remove the queued role
+                msg.guild.members.cache.get(user.id).roles.remove(config['role-q-code']);
+
                 if (adminDQ) {
                     logger.log(`!dq @${user.id} from ${course}`, `${msg.author}`)
                     msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue`);
@@ -295,6 +301,8 @@ function parseTime(time) {
 var activeVQs = new Map();
 
 function effectiveLen(obj) {
+    console.log(obj);
+
     let i = 0;
     for (item of obj) {
         if (item.u === null) {
@@ -444,13 +452,21 @@ function viewqueue(msg, args) {
             t: null
         }
 
-        for (let i = 0; i < config['queue-list-amount']; i++) {
-            
+        // Variable lets me know when there are no more students in any of the courses selected
+        let occupiedCourses = courses.length;
+        while (occupiedCourses > 0) {
+
+            // Reset the number of courses to check
+            occupiedCourses = courses.length;
+
             let minIndex = 0;
             for (let j = 0; j < courses.length; j++) {
 
                 // If a course is out of queue members, skip the course
-                if (users[j].length === 0) { continue; }
+                if (users[j].length === 0) { 
+                    occupiedCourses -= 1;
+                    continue;
+                }
 
                 if (min.t === null || times[j][0] < min.t) {
 
@@ -462,6 +478,7 @@ function viewqueue(msg, args) {
                     minIndex = j;
                 }
             }
+            
             // Put the user in the merged queue and reset min
             order.push(JSON.parse(JSON.stringify(min)));
             min.u = null; min.c = null; min.t = null;
@@ -501,18 +518,11 @@ function viewqueue(msg, args) {
             let min = null;
             let minIndex = null;
             let entriesLeft = 0;
-            for (let j = 0; j < courses.length; j++) {
-                let val = times[j][times[j].length - 1];
-                if (min === null || val < min) {
-                    min = val;
-                    minIndex = j;
-                }
-                entriesLeft += times[j].length;
-            }
+            let last = order[order.length - 2]; // -2 Because -1 would give us the null terminated one
 
-            qNameStr += `...\n${i + entriesLeft}. ${msg.guild.members.cache.get(users[minIndex][users[minIndex].length - 1])}\n`
-            qClassStr += `\n${courses[minIndex]}\n`
-            let d = new Date(times[minIndex][0]);
+            qNameStr += `...\n${order.length - 1}. ${msg.guild.members.cache.get(last.u)}\n`
+            qClassStr += `\n${last.c}\n`
+            let d = new Date(last.t);
             qTimeStr += '\n' + parseTime(d) + '\n';
         }
         
@@ -679,7 +689,7 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
 
 // Add intervals to new student channels
 bot.on('channelCreate', chan => {
-    if (chan instanceof Discord.CategoryChannel && chan.name.endsWith(config['student-chan-specifier'])) {
+    if (chan instanceof Discord.CategoryChannel && (chan.name.endsWith(config['student-chan-specifier'] || chan.name.endsWith(config['sticky-chan-specifier'])))) {
         console.log(`Timer added to "${chan.name}"`)
         addChanInterval(chan);
     } else if (chan instanceof Discord.TextChannel && chan.name.endsWith('-archived')) {
