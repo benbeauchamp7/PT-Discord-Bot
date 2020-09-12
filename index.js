@@ -142,146 +142,6 @@ bot.on('ready', () => {
     }
 });
 
-// Queueing commands
-function enqueue(msg, args) {
-    let user = Object.assign({}, msg.author);
-    let adminQ = false;
-
-    // Check for elevated user to allow args
-    if (msg.member.roles.cache.find(r => config['elevated-roles'].includes(r.name)) && args.length !== 0) {
-        
-        // If a valid mention
-        if (args[0].match(/^<@!?(\d+)>$/g)) {
-            // Reassign the user id from the mention
-            user.id = args[0].replace(/[\\<>@#&!]/g, "");
-
-            // Attempt a fetch to ensure the user is valid for this guild
-            if (msg.guild.members.cache.get(user.id) === undefined) {
-                logger.log(`!q undefined user [${user.id}]`, `${msg.author}`);
-                timedReply(msg, "that user does not exist", config['bot-alert-timeout'])
-                return false;
-            }
-            adminQ = true;
-        } else {
-            logger.log("!q invalid argument (elevated)", `${msg.author}`)
-            timedReply(msg, "invalid argument, use the @ symbol to mention the user you'd like to dequeue", config['bot-alert-timeout'])
-            return false;
-        }
-    } else if (args.length !== 0) {
-        logger.log("!q insufficient permissions", `${msg.author}`)
-        timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout'])
-        return false;
-    }
-
-    // Don't let them join a queue if they're already in one
-    for (let [temp, list] of queues) {
-        for (let i = 0; i < list.length; i++) {
-            if (list[i].user === user.id) {
-                logger.log(`!q already queued in ${temp}`, `${msg.author}`)
-                timedReply(msg, `you're already queued in ${temp}, so we couldn't queue you here`, config['bot-alert-timeout'])
-                return false;
-            }
-        }
-    }
-
-    // Get the list then add the new user to the back
-    let course = msg.channel.name;
-    queues.get(course).push({user: user.id, time: Date.now()})
-
-    let rank = queues.get(course).length;
-    let position = "";
-    switch (rank) {
-        case 1:
-            position = "**first**"
-            break;
-        case 2:
-            position = "**second**"
-            break;
-        case 3:
-            position = "**third**"
-            break;
-        default:
-            position = "number **" + rank + "**"
-    }
-
-    // Give them the queued role
-    msg.guild.members.cache.get(user.id).roles.add(config['role-q-code']);
-
-    if (adminQ) {
-        logger.log(`!q @${user.id} into ${course}`, `${msg.author}`)
-        msg.reply(`we queued ${msg.guild.members.cache.get(user.id)}, they're ${position} in line`);
-    } else {
-        logger.log(`!q self into ${course}`, `${msg.author}`)
-        msg.reply(`queued! You're ${position} in line`);
-    }
-
-    bot.channels.fetch(config['q-alert-id']).then( channel => {
-        const tag = `role-${msg.channel.name.substring(5)}-code`;
-        channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${msg.channel.name} queue and needs *your* help!`);
-    });
-
-    return true;
-}
-
-function dequeue(msg, args) {
-    let user = Object.assign({}, msg.author);
-    let adminDQ = false;
-
-    // Check for elevated user to allow args
-    if (msg.member.roles.cache.find(r => config['elevated-roles'].includes(r.name)) && args.length !== 0) {
-        
-        // If a valid mention
-        if (args[0].match(/^<@!?(\d+)>$/g)) {
-            // Reassign the user id from the mention
-            user.id = args[0].replace(/[\\<>@#&!]/g, "");
-            adminDQ = true;
-        } else {
-            logger.log("!q invalid argument (elevated)", `${msg.author}`)
-            timedReply(msg, "invalid argument, use the @ symbol to mention the user you'd like to dequeue", config['bot-alert-timeout'])
-            return false;
-        }
-    } else if (args.length !== 0) {
-        logger.log("!q insufficient permissions", `${msg.author}`)
-        timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout'])
-        return false;
-    }
-
-    // Find the user
-    for (let [course, list] of queues) {
-        for (let i = 0; i < list.length; i++) {
-            if (list[i].user === user.id) {
-
-                // Take the user out of the queue
-                list.splice(i, 1);
-
-                // Remove the queued role
-                msg.guild.members.cache.get(user.id).roles.remove(config['role-q-code']);
-
-                if (adminDQ) {
-                    logger.log(`!dq @${user.id} from ${course}`, `${msg.author}`)
-                    msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue`);
-                } else {
-                    logger.log(`!dq self from ${course}`, `${msg.author}`)
-                    msg.reply(`removed! You're no longer queued`);
-                }
-
-                return true;
-            }
-        }
-    }
-
-    // User not found
-    if (adminDQ) {
-        logger.log(`!dq @${msg.guild.members.cache.get(user.id).name} not in queue`, `${msg.author}`)
-        timedReply(msg, `${msg.guild.members.cache.get(user.id)} was not in a queue`, config['bot-alert-timeout'])
-    } else {
-        logger.log(`!dq self not in queue`, `${msg.author}`)
-        timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
-    }
-
-    return false;
-}
-
 function parseTime(time) {
     let amPm = (time.getHours() >= 12 ? 'PM' : 'AM');
     let hrs = (time.getHours() > 12 ? time.getHours() - 12 : time.getHours());
@@ -743,11 +603,12 @@ bot.on('message', msg => {
                 intervalMap: intervalMap,
                 user: msg.author,
                 cooldown: cooldownUsers, 
+                queues: queues
             }
             isOnCooldown(msg.author.id); // Clear cooldown if applicable
 
             // Queue commands must be handled seperately (at a higher level than single commands)
-            if (['enqueue', 'dequeue', 'viewqueue', 'q', 'dq', 'vq', 'clearqueue', 'saveq', 'loadq'].includes(command)) {
+            if (['viewqueue', 'vq', 'clearqueue', 'saveq', 'loadq'].includes(command)) {
                 let didSucceed = false;
                 switch (command) {
                     case 'enqueue':
