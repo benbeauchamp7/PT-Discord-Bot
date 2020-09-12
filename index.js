@@ -17,6 +17,7 @@ for (const file of commandFiles) {
 
 // Get audit logger
 const logger = require('./logging.js');
+const save = require('./save.js');
 
 // Banned word list sourced from http://www.bannedwordlist.com/lists/swearWords.txt
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
@@ -29,6 +30,7 @@ const otherCommands = config['other-commands'];
 // Handle automatic cleanup of channels
 var intervalMap = new Map();
 var warnMap = new Map();
+
 function addChanInterval(categoryChannel) {
     warnMap.set(categoryChannel.id, null);
     const intervalID = bot.setInterval(checkChanTimeout, config['room-inactivity-update'], categoryChannel);
@@ -53,11 +55,6 @@ async function checkChanTimeout(categoryChannel) {
     // console.log(textChan.lastMessage)
     let last = await textChan.messages.fetch({limit: 1});
     last = last.first();
-
-    console.log(textChan.parent.name.endsWith(config["student-chan-specifier"]))
-    console.log(last.createdAt.getTime() + config['text-room-timeout'] < Date.now())
-    console.log(textChan.parent.name.endsWith(config["sticky-chan-specifier"]))
-    console.log(last.createdAt.getTime() + config['sticky-room-timeout'] < Date.now())
 
     if ( (textChan.parent.name.endsWith(config["student-chan-specifier"]) && last.createdAt.getTime() + config['text-room-timeout'] < Date.now())
     ||  (textChan.parent.name.endsWith(config["sticky-chan-specifier"]) && last.createdAt.getTime() + config['sticky-room-timeout'] < Date.now()) ) {
@@ -120,8 +117,7 @@ function isOnCooldown(userID) {
 
 // Declare queue maps that work in parallel, one containing the times people joined and the other containing the user IDs
 // Each course maps to a basic array acting as a queue, each populated with user ids or time stamps (repsectively)
-var userQueues = new Map();
-var timeJoinedQueues = new Map();
+let queues = new Map();
 bot.on('ready', () => {
     // Ping console when bot is ready
     console.log('Bot Ready!');
@@ -142,8 +138,7 @@ bot.on('ready', () => {
 
     // Set up queue map
     for (course of config['course-channels']) {
-        userQueues.set(course, []);
-        timeJoinedQueues.set(course, []);
+        queues.set(course, []);
     }
 });
 
@@ -179,26 +174,21 @@ function enqueue(msg, args) {
     }
 
     // Don't let them join a queue if they're already in one
-    for (let [temp, list] of userQueues) {
-        if (list.includes(user.id)) {
-            logger.log(`!q already queued in ${temp}`, `${msg.author}`)
-            timedReply(msg, `you're already queued in ${temp}, so we couldn't queue you here`, config['bot-alert-timeout'])
-            return false;
+    for (let [temp, list] of queues) {
+        for (let i = 0; i < list.length; i++) {
+            if (list[i].user === user.id) {
+                logger.log(`!q already queued in ${temp}`, `${msg.author}`)
+                timedReply(msg, `you're already queued in ${temp}, so we couldn't queue you here`, config['bot-alert-timeout'])
+                return false;
+            }
         }
     }
 
     // Get the list then add the new user to the back
     let course = msg.channel.name;
-    let l = userQueues.get(course);
-    l.push(user.id)
-    userQueues.set(course, l);
+    queues.get(course).push({user: user.id, time: Date.now()})
 
-    // Same thing for time
-    l = timeJoinedQueues.get(course);
-    l.push(Date.now());
-    timeJoinedQueues.set(course, l);
-
-    let rank = userQueues.get(course).length;
+    let rank = queues.get(course).length;
     let position = "";
     switch (rank) {
         case 1:
@@ -257,19 +247,12 @@ function dequeue(msg, args) {
     }
 
     // Find the user
-    for (let [course, list] of userQueues) {
+    for (let [course, list] of queues) {
         for (let i = 0; i < list.length; i++) {
-            if (list[i] === user.id) {
-                
-                // Remove user id
-                let l = userQueues.get(course);
-                l.splice(i, 1);
-                userQueues.set(course, l);
+            if (list[i].user === user.id) {
 
-                // Remove user's timestamp
-                l = timeJoinedQueues.get(course);
-                l.splice(i, 1);
-                timeJoinedQueues.set(course, l);
+                // Take the user out of the queue
+                list.splice(i, 1);
 
                 // Remove the queued role
                 msg.guild.members.cache.get(user.id).roles.remove(config['role-q-code']);
@@ -325,18 +308,18 @@ function viewqueue(msg, args) {
     let queueEmpty = true;
     let deliverable = "An error occured while creating the embed"
 
-    let userOrder = userQueues.get(msg.channel.name);
-    let timeOrder = timeJoinedQueues.get(msg.channel.name);
+    let qList = queues.get(msg.channel.name);
+    console.log(queues)
 
     if (args.length === 0) {
         // None specified, use the current one
         let qNameStr = "";
         let qTimeStr = "";
-        for (let i = 0; i < userOrder.length; i++) {
+        for (let i = 0; i < qList.length; i++) {
             queueEmpty = false;
             
-            qNameStr += `${i + 1}. ${msg.guild.members.cache.get(userOrder[i])}\n`
-            let d = new Date(timeOrder[i]);
+            qNameStr += `${i + 1}. ${msg.guild.members.cache.get(qList[i].user)}\n`
+            let d = new Date(qList[i].time);
             qTimeStr += parseTime(d) + '\n';
         }
 
@@ -361,7 +344,7 @@ function viewqueue(msg, args) {
                 )
                 .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
 
-            logger.log(`!vq std for ${msg.channel.name.slice(5)} len ${userOrder.length}`, `${msg.author}`)
+            logger.log(`!vq std for ${msg.channel.name.slice(5)} len ${qList.length}`, `${msg.author}`)
         }
 
     } else {
@@ -402,8 +385,8 @@ function viewqueue(msg, args) {
 
             } else {
                 // Tell them the mentioned's spot in line
-                for (let i = 0; i < userOrder.length; i++) {
-                    if (mention.id === userOrder[i]) {
+                for (let i = 0; i < qList.length; i++) {
+                    if (mention.id === qList[i].user) {
                         let position = "";
                         switch (i + 1) {
                             case 1:
@@ -439,14 +422,17 @@ function viewqueue(msg, args) {
             
         // If the code makes it to this point, it means that the above code didn't return. 
         // Get all courses specified to join over
-        let users = [];
         let courses = [];
-        let times = [];
+        let bundles = [];
         for (course of args) {
             try {
-                users.push(JSON.parse(JSON.stringify(userQueues.get('csce-' + course))));
-                times.push(JSON.parse(JSON.stringify(timeJoinedQueues.get('csce-' + course))));
+                let cqueue = queues.get('csce-' + course);
+                bundles.push(JSON.parse(JSON.stringify(cqueue)));
+
+                // users.push(JSON.parse(JSON.stringify(cqueue.user)));
+                // times.push(JSON.parse(JSON.stringify(cqueue.time)));
             } catch (err) {
+                console.log(err)
                 timedReply(msg, "Unrecognized course, please try again", config['bot-alert-timeout'])
                 return false;
             }
@@ -472,17 +458,17 @@ function viewqueue(msg, args) {
             for (let j = 0; j < courses.length; j++) {
 
                 // If a course is out of queue members, skip the course
-                if (users[j].length === 0) { 
+                if (bundles[j].length === 0) { 
                     occupiedCourses -= 1;
                     continue;
                 }
 
-                if (min.t === null || times[j][0] < min.t) {
+                if (min.t === null || bundles[j][0].time < min.t) {
 
                     // Save the data & move the next person into their place
-                    min.u = users[j][0];
+                    min.u = bundles[j][0].user;
                     min.c = courses[j];
-                    min.t = times[j][0];
+                    min.t = bundles[j][0].time;
 
                     minIndex = j;
                 }
@@ -491,8 +477,7 @@ function viewqueue(msg, args) {
             // Put the user in the merged queue and reset min
             order.push(JSON.parse(JSON.stringify(min)));
             min.u = null; min.c = null; min.t = null;
-            users[minIndex].shift();
-            times[minIndex].shift();
+            bundles[minIndex].shift();
         }
 
         // Format courses nicely
@@ -592,8 +577,7 @@ function clearqueue(message) {
 
                     // Reinitialize
                     for (course of config['course-channels']) {
-                        userQueues.set(course, []);
-                        timeJoinedQueues.set(course, []);
+                        queues.set(course, []);
                     }
 
                     message.reply("confirmed!").then(recipt => {
@@ -763,7 +747,7 @@ bot.on('message', msg => {
             isOnCooldown(msg.author.id); // Clear cooldown if applicable
 
             // Queue commands must be handled seperately (at a higher level than single commands)
-            if (['enqueue', 'dequeue', 'viewqueue', 'q', 'dq', 'vq', 'clearqueue'].includes(command)) {
+            if (['enqueue', 'dequeue', 'viewqueue', 'q', 'dq', 'vq', 'clearqueue', 'saveq', 'loadq'].includes(command)) {
                 let didSucceed = false;
                 switch (command) {
                     case 'enqueue':
@@ -795,6 +779,14 @@ bot.on('message', msg => {
                         if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
                         else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
 
+                        break;
+
+                    case 'saveq':
+                        save.saveQueue(queues);
+                        break;
+
+                    case 'loadq':
+                        queues = save.loadQueue();
                         break;
                 }
             } else {

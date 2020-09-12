@@ -1,7 +1,10 @@
 {
-    "prefix": "?",
+    "prefix": "!",
     "do-moderate-chat": true,
     "do-archive-deletions": true,
+
+    "queue-file-path": "PersistantData/queueSave.csv",
+    "chan-file-path": "PersistantData/chanSave.csv",
 
     "bot-alert-timeout": 10000,
 
@@ -21,10 +24,10 @@
     "elevated-roles": ["Peer Teacher", "Bot Manager", "Professor", "Off the Clock"],
     "queue-list-amount": 10,
 
-    "student-chan-specifier": "(Test)",
+    "student-chan-specifier": "(TEMPORARY)",
     "text-room-timeout": 1200000,
 
-    "sticky-chan-specifier": "(PT-TEST)",
+    "sticky-chan-specifier": "(PT)",
     "sticky-room-timeout": 7200000,
 
     "create-room-id": "731922429508583486",
