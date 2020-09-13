@@ -40,7 +40,7 @@ module.exports = {
 \n\`!#move @user #destination\`
 > Moves a student to the voice channel under #destination, this action is monitored
 \n\`!#mute @user\`
-> Applies a server mute to a student, this action is monitored`}
+> Toggles server mute for a student, this action is monitored`}
                 )
                 .setFooter("This embed will disappear in 3 minutes");;
 

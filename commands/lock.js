@@ -1,14 +1,8 @@
 const fs = require('fs');
 const logger = require('../logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const Discord = require('discord.js');
-
-function timedReply(message, response, time) {
-    message.reply(response).then(reply => {
-        reply.delete({'timeout': time});
-        message.delete({'timeout': time});
-    });
-}
+const replies = require('../replies.js');
+const CommandError = require('../commandError.js');
 
 module.exports = {
     name: 'lock',
@@ -54,23 +48,24 @@ module.exports = {
                     }
 
                     message.reply("locked! Nobody new can join this voice channel (other than staff)")
+                    logger.log(`locked #${parent.name}`, `${message.author}`)
 
                 } else {
                     // You must be in the corresponding voice channel
-                    timedReply(message, "you must be in this room's voice channel to use this command", config['bot-alert-timeout']);
-                    return false;
+                    replies.timedReply(message, "you must be in this room's voice channel to use this command", config['bot-alert-timeout']);
+                    throw new CommandError("!lock not in VC", `${message.author}`);
                 }
 
             } else {
                 // Incorrect Channel
-                timedReply(message, "you can only use this in a temporary chat room", config['bot-alert-timeout']);
-                return false;
+                replies.timedReply(message, "you can only use this in a temporary chat room", config['bot-alert-timeout']);
+                throw new CommandError("!lock wrong room", `${message.author}`);
             }
 
         } else {
             // Insufficent permissions
-            timedReply(message, "you do not have permission to use this command", config['bot-alert-timeout']);
-            return false;
+            replies.timedReply(message, "you do not have permission to use this command", config['bot-alert-timeout']);
+            throw new CommandError("!lock insufficent permissions", `${message.author}`);
         }
 
 

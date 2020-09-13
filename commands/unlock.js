@@ -1,13 +1,8 @@
 const fs = require('fs');
 const logger = require('../logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-
-function timedReply(message, response, time) {
-    message.reply(response).then(reply => {
-        reply.delete({'timeout': time});
-        message.delete({'timeout': time});
-    });
-}
+const replies = require('../replies.js');
+const CommandError = require('../commandError.js');
 
 module.exports = {
     name: 'unlock',
@@ -28,24 +23,25 @@ module.exports = {
                     voiceChan.lockPermissions();
 
                     message.reply("we've unlocked the channel, anyone can join now!");
+                    logger.log(`unlocked #${parent.name}`, `${message.author}`)
 
 
                 } else {
                     // You must be in the corresponding voice channel
-                    timedReply(message, "you must be in this room's voice channel to use this command", config['bot-alert-timeout']);
-                    return false;
+                    replies.timedReply(message, "you must be in this room's voice channel to use this command", config['bot-alert-timeout']);
+                    throw new CommandError("!unlock not in VC", `${message.author}`);
                 }
 
             } else {
                 // Incorrect Channel
-                timedReply(message, "you can only use this in a temporary chat room", config['bot-alert-timeout']);
-                return false;
+                replies.timedReply(message, "you can only use this in a temporary chat room", config['bot-alert-timeout']);
+                throw new CommandError("!unlock wrong room", `${message.author}`);
             }
 
         } else {
             // Insufficent permissions
-            timedReply(message, "you do not have permission to use this command", config['bot-alert-timeout']);
-            return false;
+            replies.timedReply(message, "you do not have permission to use this command", config['bot-alert-timeout']);
+            throw new CommandError("!unlock insufficent permissions", `${message.author}`);
         }
 
 

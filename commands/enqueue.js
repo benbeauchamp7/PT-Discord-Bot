@@ -1,6 +1,9 @@
 const logger = require('../logging.js');
 const fs = require("fs");
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const replies = require('../replies.js');
+const save = require('../save.js');
+const CommandError = require('../commandError.js');
 
 function checkMention(mention, msg) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
@@ -46,26 +49,23 @@ module.exports = {
             // If a valid mention
             let mentionID = checkMention(args[0], msg);
             if (!mentionID) {
-                logger.log(`!q undefined user [${user.id}]`, `${msg.author}`);
-                timedReply(msg, "that user does not exist (maybe a broken mention?)", config['bot-alert-timeout'])
-                return false;
+                replies.timedReply(msg, "that user does not exist (maybe a broken mention?)", config['bot-alert-timeout'])
+                throw new CommandError(`!q undefined user [${user.id}]`, `${msg.author}`);
             }
             adminQ = true;
             user.id = mentionID;
             
         } else if (args.length !== 0) {
-            logger.log("!q insufficient permissions", `${msg.author}`)
-            timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout'])
-            return false;
+            replies.timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout'])
+            throw new CommandError("!q insufficient permissions", `${msg.author}`);
         }
 
         // Don't let them join a queue if they're already in one
         for (let [temp, list] of queues) {
             for (let i = 0; i < list.length; i++) {
                 if (list[i].user === user.id) {
-                    logger.log(`!q already queued in ${temp}`, `${msg.author}`)
-                    timedReply(msg, `you're already queued in ${temp}, so we couldn't queue you here`, config['bot-alert-timeout'])
-                    return false;
+                    replies.timedReply(msg, `you're already queued in ${temp}, so we couldn't queue you here`, config['bot-alert-timeout'])
+                    throw new CommandError(`!q already queued in ${temp}`, `${msg.author}`);
                 }
             }
         }
@@ -87,10 +87,12 @@ module.exports = {
             msg.reply(`queued! You're ${position} in line`);
         }
 
-        bot.channels.fetch(config['q-alert-id']).then( channel => {
+        bot.channels.fetch(config['q-alert-id']).then(channel => {
             const tag = `role-${msg.channel.name.substring(5)}-code`;
             channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${msg.channel.name} queue and needs *your* help!`);
         });
+
+        save.saveQueue(queues);
 
         return true;
     }

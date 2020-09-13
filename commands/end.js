@@ -1,6 +1,7 @@
 const logger = require('../logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const CommandError = require('../commandError.js');
 
 module.exports = {
     name: 'end',
@@ -42,8 +43,7 @@ module.exports = {
                     message.delete({'timeout': timeout});
                 });
 
-                logger.log("PT !end failed (insufficent perms)", `${message.author}`);
-                return false;
+                throw new CommandError("PT !end failed (insufficent perms)", `${message.author}`);
             }
 
             // Remove all servers in the same category (archive text channel if applicable)
@@ -84,8 +84,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
-            logger.log("!end wrong room", `${message.author}`)
-            return false;
+            throw new CommandError("!end wrong room", `${message.author}`);
         }
     }
 }

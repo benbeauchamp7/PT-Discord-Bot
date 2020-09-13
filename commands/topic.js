@@ -1,6 +1,7 @@
 const fs = require('fs');
 const logger = require('../logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const CommandError = require('../commandError.js');
 
 module.exports = {
     name: 'topic',
@@ -31,7 +32,7 @@ module.exports = {
                 message.delete();
             });
 
-            return false;
+            throw new CommandError("!topic bad word found", `${message.author}`);
         }
 
 
@@ -55,8 +56,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
             
-            logger.log("!topic wrong room", `${message.author}`)
-            return false;
+            throw new CommandError("!topic wrong room", `${message.author}`);
         }
     }
 }

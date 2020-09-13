@@ -1,6 +1,8 @@
 const logger = require('../logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const replies = require('../replies.js');
+const CommandError = require('../commandError.js');
 
 function getUserFromMention(msg, mention) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
@@ -12,19 +14,11 @@ function getUserFromMention(msg, mention) {
     return undefined;
 }
 
-// Basic messages that expire after a set time
-function timedReply(message, response, time) {
-    message.reply(response).then(reply => {
-        reply.delete({'timeout': time});
-        message.delete({'timeout': time});
-    });
-}
-
 function report(anchor, user, target) {
     let chan = anchor.guild.channels.resolve(config["infraction-chan-id"])
-    chan.send(`<@&${config['bot-manager-role-id']}>s, ${user} attempted to ban ${target}`)
+    chan.send(`<@&${config['bot-manager-role-id']}>s, ${user} used !#ban on ${target}`)
 
-    logger.log(`WARN: ${user} attempted to ban ${target}`, user.id);
+    logger.log(`WARN: ${user} used !#ban on ${target}`, user.id);
 }
 
 module.exports = {
@@ -33,29 +27,30 @@ module.exports = {
     async execute(message, args) {
 
         if (!message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
-            timedReply(message, "you do not have permission to use this command.", config["bot-alert-timeout"]);
-            return false;
+            replies.timedReply(message, "you do not have permission to use this command.", config["bot-alert-timeout"]);
+            throw new CommandError("!#ban insufficent perms", `${message.author}`);
         }
 
         let member = getUserFromMention(message, args[0]);
 
         if (member === undefined) {
-            timedReply(message, "user not found, command failed", config["bot-alert-timeout"]);
-            return false;
+            replies.timedReply(message, "user not found, command failed", config["bot-alert-timeout"]);
+            throw new CommandError("!#ban user not found", `${message.author}`);
 
         } else if (member.id === message.author.id) {
-            timedReply(message, "you cannot use an admin command on yourself", config["bot-alert-timeout"]);
-            return false;
+            replies.timedReply(message, "you cannot use an admin command on yourself", config["bot-alert-timeout"]);
+            throw new CommandError("!#ban use on self", `${message.author}`);
 
         } else if (member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
-            timedReply(message, "you cannot ban another elevated user. This action was reported to moderators", config["bot-alert-timeout"]);
+            replies.timedReply(message, "you cannot ban another elevated user. This action was reported to moderators", config["bot-alert-timeout"]);
             report(message, message.author, member);
-            return false;
+            throw new CommandError("!#ban elevated user", `${message.author}`);
         }
 
         member.ban().then(() => {
-            timedReply(message, `we banned ${member}. This action was recorded`, config["bot-alert-timeout"]);
+            replies.timedReply(message, `we banned ${member}. This action was recorded`, config["bot-alert-timeout"]);
             logger.log(`WARN: banned <@${target}>`, user.id);
+            report(message, message.author, member);
             return true;
         });
         

@@ -37,7 +37,7 @@ module.exports = {
 
 	logError: function(err) {
 		console.log(`>> ERROR <<\n${err}`)
-		fs.appendFile(`./logs/${this.getErrFilename()}`, `${err}\n${err.stack}`, (error) => {
+		fs.appendFile(`./logs/${this.getErrFilename()}`, `${err.stack}`, (error) => {
 			if (error) {
 				console.log(">> The file could not be opened <<");
 				console.log(error)

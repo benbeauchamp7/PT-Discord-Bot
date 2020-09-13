@@ -6,18 +6,11 @@ const bot = new Discord.Client({ partials: ['REACTION']});
 const fs = require('fs');
 const token = fs.readFileSync("SecureKey", "utf-8");
 
-// Import all the commands from the commands folder
-bot.commands = new Discord.Collection();
-const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith('.js'));
-for (const file of commandFiles) {
-    // Include command files
-    const command = require(`./commands/${file}`);
-    bot.commands.set(command.name, command);
-}
-
 // Get audit logger
 const logger = require('./logging.js');
 const save = require('./save.js');
+const replies = require('./replies.js');
+const CommandError = require('./commandError.js');
 
 // Banned word list sourced from http://www.bannedwordlist.com/lists/swearWords.txt
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
@@ -27,9 +20,26 @@ const prefix = config['prefix'];
 const doModChat = config['do-moderate-chat'];
 const otherCommands = config['other-commands'];
 
+// Import all the commands from the commands folder
+bot.commands = new Discord.Collection();
+const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith('.js'));
+for (const file of commandFiles) {
+    // Include command files
+    const command = require(`./commands/${file}`);
+    bot.commands.set(command.name, command);
+}
+
 // Handle automatic cleanup of channels
-var intervalMap = new Map();
-var warnMap = new Map();
+let intervalMap = new Map();
+let warnMap = new Map();
+
+// Keeps track of all the basic !vqs to help keep channels clean
+let activeVQs = new Map();
+
+// Tracks users on cooldown from making rooms
+let cooldownUsers = new Map();
+
+let queues = new Map();
 
 function addChanInterval(categoryChannel) {
     warnMap.set(categoryChannel.id, null);
@@ -89,23 +99,7 @@ async function checkChanTimeout(categoryChannel) {
     }
 }
 
-// Basic messages that expire after a set time
-function timedReply(message, response, time) {
-    message.reply(response).then(reply => {
-        reply.delete({'timeout': time});
-        message.delete({'timeout': time});
-    });
-}
 
-function timedMessage(message, response, time) {
-    message.channel.send(response).then(reply => {
-        reply.delete({'timeout': time});
-        message.delete({'timeout': time});
-    });
-}
-
-// Declare cooldown structure
-var cooldownUsers = new Map();
 function isOnCooldown(userID) {
     // Take member of cooldown if enough time has passed (unless it's me)
     if (cooldownUsers.has(userID) && ((cooldownUsers.get(userID) + config['channel-create-cooldown'] < Date.now()) || userID === '335481074236915712')) {
@@ -117,7 +111,7 @@ function isOnCooldown(userID) {
 
 // Declare queue maps that work in parallel, one containing the times people joined and the other containing the user IDs
 // Each course maps to a basic array acting as a queue, each populated with user ids or time stamps (repsectively)
-let queues = new Map();
+
 bot.on('ready', () => {
     // Ping console when bot is ready
     console.log('Bot Ready!');
@@ -140,341 +134,10 @@ bot.on('ready', () => {
     for (course of config['course-channels']) {
         queues.set(course, []);
     }
+
+    queues = save.loadQueue();
+
 });
-
-function parseTime(time) {
-    let amPm = (time.getHours() >= 12 ? 'PM' : 'AM');
-    let hrs = (time.getHours() > 12 ? time.getHours() - 12 : time.getHours());
-    let mins = (time.getMinutes() > 9 ? time.getMinutes() : `0${time.getMinutes()}`)
-    return `${hrs}:${mins} ${amPm}`;
-}
-
-// Keeps track of all the basic !vqs to help keep channels clean
-var activeVQs = new Map();
-
-function effectiveLen(obj) {
-    console.log(obj);
-
-    let i = 0;
-    for (item of obj) {
-        if (item.u === null) {
-            return i;
-        }
-        i += 1;
-    }
-}
-
-function viewqueue(msg, args) {
-    let queueEmpty = true;
-    let deliverable = "An error occured while creating the embed"
-
-    let qList = queues.get(msg.channel.name);
-    console.log(queues)
-
-    if (args.length === 0) {
-        // None specified, use the current one
-        let qNameStr = "";
-        let qTimeStr = "";
-        for (let i = 0; i < qList.length; i++) {
-            queueEmpty = false;
-            
-            qNameStr += `${i + 1}. ${msg.guild.members.cache.get(qList[i].user)}\n`
-            let d = new Date(qList[i].time);
-            qTimeStr += parseTime(d) + '\n';
-        }
-
-        if (queueEmpty) {
-            deliverable = new Discord.MessageEmbed()
-                .setColor('#0099ff')
-                .setTitle(`Queue order of ${msg.channel.name.slice(5)}`)
-                .addFields(
-                    { name: 'Status', value: 'Queue is Empty!'}
-                )
-                .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
-
-            logger.log(`!vq std (empty) for ${msg.channel.name.slice(5)}`, `${msg.author}`)
-
-        } else {
-            deliverable = new Discord.MessageEmbed()
-                .setColor('#0099ff')
-                .setTitle(`Queue order of ${msg.channel.name.slice(5)}`)
-                .addFields(
-                    { name: 'Student', value: qNameStr, inline: true },
-                    { name: 'Queue Time', value: qTimeStr, inline: true }
-                )
-                .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
-
-            logger.log(`!vq std for ${msg.channel.name.slice(5)} len ${qList.length}`, `${msg.author}`)
-        }
-
-    } else {
-        // Discern between mention protocol and course protocol
-        if (args[0].match(/^<@!?(\d+)>$/g) || args[0] == 'me') {
-
-            let mention = undefined;
-            if (args[0] == 'me') {
-                mention = msg.guild.members.cache.get(msg.author.id);
-            } else {
-                // Check for valid mention and for mentioned user's roles if mention
-                mention = msg.guild.members.cache.get(args[0].replace(/[\\<>@#&!]/g, ""));
-            }
-
-            if (mention === undefined) {
-                logger.log(`!vq undefined user [${args[0].replace(/[\\<>@#&!]/g, "")}]`, `${msg.author}`)
-                timedReply(msg, "that user does not exist", config['bot-alert-timeout'])
-                return false;
-
-            } else if (mention.roles.cache.find(r => r.name === "Peer Teacher" || r.name === "Off the Clock")) {
-                // Should print the queue using the peer teacher's classes
-                args = [];
-                for (role of mention.roles.cache) {
-                    role = role[1];
-                    if (role.name.startsWith("CSCE")) {
-                        args.push(role.name.substr(role.name.length - 3)) // Gets the number from the role
-                    }
-                }
-
-                // If peer teacher has no classes, fail the command
-                if (args.length === 0) {
-                    logger.log(`!vq ${mention.name} not registered`, `${msg.author}`)
-                    timedMessage(msg, `${mention} isn't registered for any classes (maybe they forgot to stop by <#737169678677311578>?)`, config['bot-alert-timeout'])
-                    return false;
-                }
-
-                // Code passes through to the bottom
-
-            } else {
-                // Tell them the mentioned's spot in line
-                for (let i = 0; i < qList.length; i++) {
-                    if (mention.id === qList[i].user) {
-                        let position = "";
-                        switch (i + 1) {
-                            case 1:
-                                position = "**first**"
-                                break;
-                            case 2:
-                                position = "**second**"
-                                break;
-                            case 3:
-                                position = "**third**"
-                                break;
-                            default:
-                                position = "number **" + `${i + 1}` + "**"
-                                break;
-                        }
-                        
-                        msg.channel.send(`${mention} is ${position} in line`);
-                        logger.log(`!vq ${mention.name} in line`, `${msg.author}`)
-                        return true;
-                    }
-                }
-                // Person not found in this queue
-                msg.channel.send(`${mention} is not in line`);
-                logger.log(`!vq ${mention.name} not in line`, `${msg.author}`)
-                return false;
-            }
-        }
-
-        if (args[0] == 'all') {
-            // emote-names just happens to have a list of all the courses
-            args = config['emote-names'];
-        }
-            
-        // If the code makes it to this point, it means that the above code didn't return. 
-        // Get all courses specified to join over
-        let courses = [];
-        let bundles = [];
-        for (course of args) {
-            try {
-                let cqueue = queues.get('csce-' + course);
-                bundles.push(JSON.parse(JSON.stringify(cqueue)));
-
-                // users.push(JSON.parse(JSON.stringify(cqueue.user)));
-                // times.push(JSON.parse(JSON.stringify(cqueue.time)));
-            } catch (err) {
-                console.log(err)
-                timedReply(msg, "Unrecognized course, please try again", config['bot-alert-timeout'])
-                return false;
-            }
-            courses.push(course);
-        }
-
-        // Cycle through to find the order
-        let order = [];
-        let min = {
-            u: null,
-            c: null,
-            t: null
-        }
-
-        // Variable lets me know when there are no more students in any of the courses selected
-        let occupiedCourses = courses.length;
-        while (occupiedCourses > 0) {
-
-            // Reset the number of courses to check
-            occupiedCourses = courses.length;
-
-            let minIndex = 0;
-            for (let j = 0; j < courses.length; j++) {
-
-                // If a course is out of queue members, skip the course
-                if (bundles[j].length === 0) { 
-                    occupiedCourses -= 1;
-                    continue;
-                }
-
-                if (min.t === null || bundles[j][0].time < min.t) {
-
-                    // Save the data & move the next person into their place
-                    min.u = bundles[j][0].user;
-                    min.c = courses[j];
-                    min.t = bundles[j][0].time;
-
-                    minIndex = j;
-                }
-            }
-            
-            // Put the user in the merged queue and reset min
-            order.push(JSON.parse(JSON.stringify(min)));
-            min.u = null; min.c = null; min.t = null;
-            bundles[minIndex].shift();
-        }
-
-        // Format courses nicely
-        let courseStr = courses[0];
-        for (let i = 1; i < courses.length - 1; i++) {
-            courseStr += ', ' + courses[i];
-        }
-
-        if (courses.length > 1) {
-            courseStr += ' and ' + courses[courses.length - 1];
-        }
-
-        // Format the queue order nicely
-        let qNameStr = "";
-        let qClassStr = "";
-        let qTimeStr = "";
-        let queueEmpty = true;
-        let i = 0;
-        for (i = 0; i < order.length && i < config['queue-list-amount']; i++) {
-            if (order[i].u === null) { break; }
-            queueEmpty = false;
-            
-            qNameStr += `${i + 1}. ${msg.guild.members.cache.get(order[i].u)}\n`
-            qClassStr += `${order[i].c}\n`;
-            let d = new Date(order[i].t);
-            qTimeStr += parseTime(d) + '\n';
-        }
-
-        // Check if the whole queue isn't displayed
-        if (i < effectiveLen(order)) {
-            // Want to show the last position
-            let min = null;
-            let minIndex = null;
-            let entriesLeft = 0;
-            let last = order[order.length - 2]; // -2 Because -1 would give us the null terminated one
-
-            qNameStr += `...\n${order.length - 1}. ${msg.guild.members.cache.get(last.u)}\n`
-            qClassStr += `\n${last.c}\n`
-            let d = new Date(last.t);
-            qTimeStr += '\n' + parseTime(d) + '\n';
-        }
-        
-        if (queueEmpty) {
-            deliverable = new Discord.MessageEmbed()
-                .setColor('#0099ff')
-                .setTitle(`Queue order of ${courseStr}`)
-                .addFields(
-                    { name: 'Status', value: 'Queue is Empty!'}
-                )
-                .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
-
-            logger.log(`!vq empty for ${courses}`, `${msg.author}`)
-
-        } else {
-            deliverable = new Discord.MessageEmbed()
-                .setColor('#0099ff')
-                .setTitle(`Queue order of ${courseStr}`)
-                .addFields(
-                    { name: 'Student', value: qNameStr, inline: true },
-                    { name: 'Course‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎', value: qClassStr, inline: true },
-                    { name: 'Queue Time', value: qTimeStr, inline: true }
-                )
-                .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
-            
-            logger.log(`!vq for ${courses}`, `${msg.author}`)
-        }
-    }
-
-    msg.channel.send(deliverable).then(embed => {
-        if (args.length === 0) {
-            if (activeVQs.has(msg.channel.name)) {
-                for (msgToDelete of activeVQs.get(msg.channel.name)) {
-                    logger.log(`!vq previous in ${msg.channel.name} deleted`, `${msg.author}`)
-                    msgToDelete.delete();
-                }
-            }
-            
-            activeVQs.set(msg.channel.name, [msg, embed]);
-        }
-    });
-
-    return true;
-}
-
-function clearqueue(message) {
-    if (message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
-        message.reply("this will remove all students from all queues, type !confirm to continue or !cancel to cancel. The command will cancel automatically if no response is detected in 30 seconds").then(confirmationMessage => {
-
-            // Both delete promises fail quietly in case !cancel deletes the messages first
-            confirmationMessage.delete({"timeout": 30000}).catch(() => {});
-            message.delete({"timeout": 30000}).catch(() => {});
-
-            // Set a message collector to look for !confirm or !cancel
-            const collector = new Discord.MessageCollector(message.channel, reply => reply.author.id === message.author.id, {"time": 30000})
-            collector.on('collect', reply => {
-                if (reply.content.toLowerCase() == "!confirm") {
-
-                    // Reinitialize
-                    for (course of config['course-channels']) {
-                        queues.set(course, []);
-                    }
-
-                    message.reply("confirmed!").then(recipt => {
-
-                        // Deletion promises set to fail quietly in case the 30 second timeout deletes the messages first
-                        try {
-                            reply.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                            message.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                            confirmationMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                            if (recipt) {
-                                recipt.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                            }
-                        } catch (err) {
-                            logger.log(`ERROR: !clearq promises threw an error`, `${msg.author}`)
-                            logger.logError(err);
-                        }
-                        logger.log(`!clearq called`, `${msg.author}`)
-
-                    });
-                    return true;
-
-                } else if (reply.content.toLowerCase() == "!cancel") {
-                    message.reply("Command canceled").then(cancelMessage => {
-
-                        // Deletion promises set to fail quietly in case the 30 second timeout deletes the messages first
-                        reply.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                        message.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                        confirmationMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                        cancelMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-
-                    });
-                    return false;  
-                }
-            });
-        });
-    }
-}
 
 // Fires on uncached reaction events for course enrollment
 bot.on('raw', packet => {
@@ -603,69 +266,31 @@ bot.on('message', msg => {
                 intervalMap: intervalMap,
                 user: msg.author,
                 cooldown: cooldownUsers, 
-                queues: queues
+                queues: queues,
+                activeVQs: activeVQs
             }
             isOnCooldown(msg.author.id); // Clear cooldown if applicable
 
-            // Queue commands must be handled seperately (at a higher level than single commands)
-            if (['viewqueue', 'vq', 'clearqueue', 'saveq', 'loadq'].includes(command)) {
-                let didSucceed = false;
-                switch (command) {
-                    case 'enqueue':
-                    case 'q':
-                        didSucceed = enqueue(msg, args);
-                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
-                        else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
+            bot.commands.get(command).execute(msg, args, options).then(didSucceed => {
+                if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
+                else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
 
-                        break;
-
-                    case 'viewqueue':
-                    case 'vq':
-                        didSucceed = viewqueue(msg, args);
-                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
-                        else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
-
-                        break;
-
-                    case 'dequeue':
-                    case 'dq':
-                        didSucceed = dequeue(msg, args);
-                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
-                        else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
-
-                        break;
-
-                    case 'clearqueue':
-                        didSucceed = clearqueue(msg, args);
-                        if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
-                        else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
-
-                        break;
-
-                    case 'saveq':
-                        save.saveQueue(queues);
-                        break;
-
-                    case 'loadq':
-                        queues = save.loadQueue();
-                        break;
+                if (didSucceed && command === "create") {
+                    cooldownUsers.set(msg.author.id, Date.now());
                 }
-            } else {
-                bot.commands.get(command).execute(msg, args, options).then(didSucceed => {
-                    if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
-                    else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
+            }).catch(err => {
+                if (err instanceof CommandError) {
+                    logger.log(err.message, err.user)
+                }
+                
+            });
 
-                    if (didSucceed && command === "create") {
-                        cooldownUsers.set(msg.author.id, Date.now());
-                    }
-                });
-            }
         } catch (err) {
-            if (!otherCommands.includes(msg.content)) {
-                timedReply(msg, 'you have written an invalid command, maybe you made a typo?', config['bot-alert-timeout']);
 
-                logger.log(`ERROR: base error thrown CONTENT:${msg.content} |||| CHAN:#${msg.channel.name}`, `${msg.author}`)
-                logger.logError(err);
+            if (!otherCommands.includes(command)) {
+                replies.timedReply(msg, 'you have written an invalid command, maybe you made a typo?', config['bot-alert-timeout']);
+
+                logger.log(`ERROR: base error thrown CONTENT:${msg.content} |||| CHAN:#${msg.channel.name}`, `${msg.author}`);
             }
         }
     }

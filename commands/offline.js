@@ -1,6 +1,7 @@
 const logger = require('../logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const CommandError = require('../commandError.js');
 
 module.exports = {
     name: 'offline',
@@ -20,6 +21,6 @@ module.exports = {
             return true;
         }
 
-        return false;
+        throw new CommandError("!offline insufficent permission", `${message.author}`);
     }
 }

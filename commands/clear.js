@@ -2,6 +2,7 @@ const Discord = require("discord.js");
 const logger = require('../logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const CommandError = require('../commandError.js');
 
 function clearChat(message) {
     // Creates a copy of the channel, then deletes the original
@@ -43,6 +44,8 @@ module.exports = {
     name: 'clear',
     description: 'clears a text channel',
     async execute(message, args, options) {
+        return false;
+        
         const promptMap = new Map();
         promptMap.set('chat', "This will erase all content in this channel")
         promptMap.set('archives', "This will erase all archived content in the \"Archived Student Rooms\" category")

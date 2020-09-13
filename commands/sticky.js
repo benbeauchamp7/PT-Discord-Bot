@@ -1,6 +1,7 @@
 const fs = require('fs');
 const logger = require('../logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const CommandError = require('../commandError.js');
 
 module.exports = {
     name: 'sticky',
@@ -13,7 +14,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
-            return false;
+            throw new CommandError("!sticky insufficent permissions", `${message.author}`);
         }
 
         const timeout = config['bot-alert-timeout'];
@@ -37,7 +38,7 @@ module.exports = {
                 }
             }
 
-            if (badWordFound === true) { return false; }
+            if (badWordFound === true) { throw new CommandError("!sticky bad language", `${message.author}`); }
 
             // Create a category for the student picked topic
             if (args.length === 0) { args = ['Unnamed']; }
@@ -70,8 +71,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
-            logger.log("!createsticky wrong room", `${message.author}`);
-            return false;
+            throw new CommandError("!createsticky wrong room", `${message.author}`);
         }
     }
 }

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const logger = require('../logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const CommandError = require('../commandError.js');
 
 module.exports = {
     name: 'create',
@@ -30,7 +31,7 @@ module.exports = {
                 }
             }
 
-            if (badWordFound === true) { return false; }
+            if (badWordFound === true) { throw new CommandError("!create bad word", `${message.author}`); }
 
             // Don't let user create a channel if they are on cooldown
             if (cooldown.has(user.id)) {
@@ -41,7 +42,7 @@ module.exports = {
                     message.delete({'timeout': timeout});
                 });
 
-                return false;
+                throw new CommandError("!create on cooldown", `${message.author}`);
             }
 
             // Create a category for the student picked topic
@@ -80,8 +81,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
-            logger.log("!create wrong room", `${message.author}`);
-            return false;
+            throw new CommandError("!create wrong room", `${message.author}`);
         }
     }
 }
