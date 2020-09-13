@@ -281,6 +281,8 @@ bot.on('message', msg => {
             }).catch(err => {
                 if (err instanceof CommandError) {
                     logger.log(err.message, err.user)
+                } else {
+                    logger.logError(err);
                 }
                 
             });
