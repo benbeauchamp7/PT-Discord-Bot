@@ -9,7 +9,7 @@ function checkMention(mention, msg) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
         let id = mention.replace(/[\\<>@#&!]/g, "");
 
-        if (msg.guild.members.cache.get(user.id) === undefined) { return false; }
+        if (msg.guild.members.cache.get(id) === undefined) { return false; }
 
         return id;
     }
@@ -37,7 +37,7 @@ module.exports = {
                 replies.timedReply(msg, "that user does not exist (maybe a broken mention?)", config['bot-alert-timeout']);
                 throw new CommandError(`!dq undefined user <@${user.id}>`, `${msg.author}`);
             }
-            adminQ = true;
+            adminDQ = true;
             user.id = mentionID;
 
         } else if (args.length !== 0) {

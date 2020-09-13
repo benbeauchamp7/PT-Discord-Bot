@@ -272,9 +272,6 @@ bot.on('message', msg => {
             isOnCooldown(msg.author.id); // Clear cooldown if applicable
 
             bot.commands.get(command).execute(msg, args, options).then(didSucceed => {
-                if (didSucceed) { logger.log(`SUCCESS: ${command}`, `${msg.author}`) }
-                else { logger.log(`FAIL: ${command}`, `${msg.author}`) }
-
                 if (didSucceed && command === "create") {
                     cooldownUsers.set(msg.author.id, Date.now());
                 }

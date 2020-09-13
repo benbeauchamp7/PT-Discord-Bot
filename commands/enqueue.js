@@ -9,7 +9,7 @@ function checkMention(mention, msg) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
         let id = mention.replace(/[\\<>@#&!]/g, "");
 
-        if (msg.guild.members.cache.get(user.id) === undefined) { return false; }
+        if (msg.guild.members.cache.get(id) === undefined) { return false; }
         return id;
     }
     return false;
@@ -44,7 +44,7 @@ module.exports = {
         let adminQ = false;
 
         // Check for elevated user to allow args
-        if (!roleCheck(msg, config['elevated-roles']) && args.length !== 0) {
+        if (roleCheck(msg, config['elevated-roles']) && args.length !== 0) {
             
             // If a valid mention
             let mentionID = checkMention(args[0], msg);
@@ -64,8 +64,13 @@ module.exports = {
         for (let [temp, list] of queues) {
             for (let i = 0; i < list.length; i++) {
                 if (list[i].user === user.id) {
-                    replies.timedReply(msg, `you're already queued in ${temp}, so we couldn't queue you here`, config['bot-alert-timeout'])
-                    throw new CommandError(`!q already queued in ${temp}`, `${msg.author}`);
+                    if (adminQ) {
+                        replies.timedReply(msg, `${msg.guild.members.cache.get(user.id)} is already queued in ${temp}, so we couldn't queue them here`, config['bot-alert-timeout'])
+                        throw new CommandError(`!q already queued in ${temp}`, `${msg.author}`);
+                    } else {
+                        replies.timedReply(msg, `you're already queued in ${temp}, so we couldn't queue you here`, config['bot-alert-timeout'])
+                        throw new CommandError(`!q already queued in ${temp}`, `${msg.author}`);
+                    }
                 }
             }
         }
@@ -80,7 +85,7 @@ module.exports = {
         msg.guild.members.cache.get(user.id).roles.add(config['role-q-code']);
 
         if (adminQ) {
-            logger.log(`!q @${user.id} into ${course}`, `${msg.author}`)
+            logger.log(`!q <@${user.id}> into ${course}`, `${msg.author}`)
             msg.reply(`we queued ${msg.guild.members.cache.get(user.id)}, they're ${position} in line`);
         } else {
             logger.log(`!q self into ${course}`, `${msg.author}`)

@@ -82,6 +82,8 @@ function getTarget(msg, mention) {
         replies.timedReply(msg, "that user does not exist", config['bot-alert-timeout'])
         throw new CommandError(`!vq undefined user [${args[0].replace(/[\\<>@#&!]/g, "")}]`, `${msg.author}`)
     }
+
+    return mentionUser;
 }
 
 function getCoursesFromUser(userMention) {
@@ -144,6 +146,7 @@ function combineQueues(msg, args, queues) {
         nonemptyQueues = targetQueues.length;
 
         for (let c = 0; c < courses.length; c++) {
+
             // Skip courses with empty queues
             if (targetQueues[c].length === 0) {
                 nonemptyQueues -= 1;
@@ -151,8 +154,8 @@ function combineQueues(msg, args, queues) {
             }
 
             // If we haven't selected a min, or if this one is the new min
-            if (min === null || targetQueues[c].time < min) {
-                min = targetQueues[c].time;
+            if (min === null || targetQueues[c][0].time < min) {
+                min = targetQueues[c][0].time;
                 minIndex = c;
             }
         }

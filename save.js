@@ -42,7 +42,7 @@ module.exports = {
 
             const readInterface = readline.createInterface({
                 input: fs.createReadStream(config['queue-file-path']),
-                output: process.stdout,
+                output: null,
                 console: false
             });
 
