@@ -29,6 +29,9 @@ module.exports = {
         if (!message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
             replies.timedReply(message, "you do not have permission to use this command.", config["bot-alert-timeout"]);
             throw new CommandError("!#mute insufficent perms", `${message.author}`);
+        } else if (args.length == 0) {
+            replies.timedReply(message, "no user specified, use @ to mention a user", config["bot-alert-timeout"]);
+            throw new CommandError("!#mute no user specified", `${message.author}`);
         }
 
         let member = getUserFromMention(message, args[0]);
@@ -48,22 +51,22 @@ module.exports = {
         }
 
         if (member.voice.serverMute) {
-            member.voice.setMute(false).then(() => {
-                replies.timedReply(message, `we unmuted ${member}. This action was recorded`, config["bot-alert-timeout"]);
-                logger.log(`WARN: unmuted ${target}`, user.id);
-                report(message, message.author, member);
-                return true;
-            });
+            member.voice.setMute(false);
+
+            replies.timedReply(message, `we unmuted ${member}. This action was recorded`, config["bot-alert-timeout"]);
+            logger.log(`WARN: muted ${member}`, `${message.author}`);
+            report(message, message.author, member);
+
+            return true;
 
         } else {
-            member.voice.setMute(true).then(() => {
-                replies.timedReply(message, `we muted ${member}. Use \`!#mute\` again to undo. This action was recorded`, config["bot-alert-timeout"]);
-                logger.log(`WARN: muted <@${target}>`, user.id);
-                report(message, message.author, member);
-                return true;
-            });
+            member.voice.setMute(true);
+
+            replies.timedReply(message, `we muted ${member}. Use \`!#mute\` again to undo. This action was recorded`, config["bot-alert-timeout"]);
+            logger.log(`WARN: muted ${member}`, `${message.author}`);
+            report(message, message.author, member);
+
+            return true;
         }
-        
-        return true;
     }
 }

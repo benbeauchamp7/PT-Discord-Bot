@@ -17,22 +17,6 @@ module.exports = {
         var badWordFound = false;
         if (chan.name == 'create-room' || chan.name == 'bot-channel') {
 
-            // Make sure the title doesn't contain bad language
-            for (const badWord of bannedTitleWords) {
-                for (const userWord  of args) {
-                    if (badWord == userWord.toLowerCase()) {
-                        message.reply(`You cannot create a channel with ${badWord} in the name`).then(reply => {
-                            reply.delete({'timeout': timeout});
-                            message.delete({'timeout': timeout});
-                        });
-                        logger.log("bad word in title creation", `${message.author}`);
-                        badWordFound = true;
-                    }
-                }
-            }
-
-            if (badWordFound === true) { throw new CommandError("!create bad word", `${message.author}`); }
-
             // Don't let user create a channel if they are on cooldown
             if (cooldown.has(user.id)) {
                 const cooldownTime = config['channel-create-cooldown']

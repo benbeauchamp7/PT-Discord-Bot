@@ -275,7 +275,15 @@ module.exports = {
 
         } else {
             // No args specified, use the current one
-            deliverable = displayCurrChan(msg, qList);
+
+            // Make sure we're in a course channel
+            if (config['course-channels'].includes(msg.channel.name)) {
+                deliverable = displayCurrChan(msg, qList);
+            } else {
+                replies.timedReply(msg, "you can only use !vq without arguments in a csce channel", config['bot-alert-timeout']);
+                throw new CommandError("!vq wrong channel", `${msg.author}`);
+            }
+            
         }       
 
         msg.channel.send(deliverable).then(embed => {

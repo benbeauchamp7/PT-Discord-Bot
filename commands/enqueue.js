@@ -60,6 +60,12 @@ module.exports = {
             throw new CommandError("!q insufficient permissions", `${msg.author}`);
         }
 
+        if (!config['course-channels'].includes(msg.channel.name)) {
+            // Checks to see if in the right channel for a !q
+            replies.timedReply(msg, "you can only use !q in a csce channel", config['bot-alert-timeout']);
+            throw new CommandError("!q wrong channel", `${msg.author}`);
+        }
+
         // Don't let them join a queue if they're already in one
         for (let [temp, list] of queues) {
             for (let i = 0; i < list.length; i++) {

@@ -9,22 +9,7 @@ module.exports = {
     async execute(message, args) {
 
         const timeout = config['bot-alert-timeout'];
-        const bannedTitleWords = config['banned-title-words'];
         const chan = message.channel;
-
-        // Make sure the title doesn't contain bad language
-        var badWordFound = false;
-        for (const badWord of bannedTitleWords) {
-            for (const userWord of args) {
-                if (badWord == userWord.toLowerCase()) {
-                    message.reply(`You cannot create a channel with ${badWord} in the name`).then(reply => {
-                        reply.delete({'timeout': timeout});
-                        message.delete({'timeout': timeout});
-                    });
-                    badWordFound = true;
-                }
-            }
-        }
 
         if (badWordFound === true) {
             message.reply(`professional language only please`).then(reply => {

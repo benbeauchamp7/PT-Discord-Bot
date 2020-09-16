@@ -90,11 +90,10 @@ module.exports = {
         }
 
         if (member.voice.channel !== undefined) {
-            member.voice.setChannel(destination).then(() => {
-                replies.timedReply(message, `we moved ${member} to ${text}. This action was recorded`, config["bot-alert-timeout"]);
-                logger.log(`WARN: moved <@${member}> to ${text}`, message.author.id);
-                return true;
-            });
+            member.voice.setChannel(destination);
+            replies.timedReply(message, `we moved ${member} to ${text}. This action was recorded`, config["bot-alert-timeout"]);
+            logger.log(`WARN: moved ${member} to ${text}`, message.author.id);
+            return true;
         }
         
         return true;

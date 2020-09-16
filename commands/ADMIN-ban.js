@@ -29,6 +29,9 @@ module.exports = {
         if (!message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
             replies.timedReply(message, "you do not have permission to use this command.", config["bot-alert-timeout"]);
             throw new CommandError("!#ban insufficent perms", `${message.author}`);
+        } else if (args.length == 0) {
+            replies.timedReply(message, "no user specified, use @ to mention a user", config["bot-alert-timeout"]);
+            throw new CommandError("!#ban no user specified", `${message.author}`);
         }
 
         let member = getUserFromMention(message, args[0]);
@@ -47,12 +50,10 @@ module.exports = {
             throw new CommandError("!#ban elevated user", `${message.author}`);
         }
 
-        member.ban().then(() => {
-            replies.timedReply(message, `we banned ${member}. This action was recorded`, config["bot-alert-timeout"]);
-            logger.log(`WARN: banned <@${target}>`, user.id);
-            report(message, message.author, member);
-            return true;
-        });
+        member.ban();
+        replies.timedReply(message, `we banned ${member}. This action was recorded`, config["bot-alert-timeout"]);
+        logger.log(`WARN: banned ${member}`, `${message.author.id}`);
+        report(message, message.author, member);
         
         return true;
     }
