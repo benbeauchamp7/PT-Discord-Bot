@@ -42,6 +42,8 @@ module.exports = {
         let bot = options.bot;
         let user = Object.assign({}, msg.author);
         let adminQ = false;
+        let qTarget = msg.channel.name;
+        let qTargetPretty = qTarget;
 
         // Check for elevated user to allow args
         if (roleCheck(msg, config['elevated-roles']) && args.length !== 0) {
@@ -54,15 +56,37 @@ module.exports = {
             }
             adminQ = true;
             user.id = mentionID;
+
+            // Allow for !q targeting
+            if (args.length >= 3 && args[1].toLowerCase() === 'into') {
+                if (config['emote-names'].includes(args[2])) {
+                    qTarget = "csce-" + args[2];
+                    qTargetPretty = qTarget;
+                } else if (config["personal-q-aliases"].includes(args[2])) {
+                    qTarget = `<@${msg.author.id}>`;
+                    qTargetPretty = `${msg.author}'s personal queue`;
+                } else {
+                    replies.timedReply(msg, "you can only place students into course queues (121, 221, ...), or your personal queue (with 'personal' or 'mine')", config['bot-alert-timeout']);
+                    throw new CommandError("!q invalid target", `${msg.author}`);
+                }
+
+
+            } else if (args.length > 1) {
+                replies.timedReply(msg, "target !q syntax: `!q @user INTO [<course number> | personal | mine]`", config['bot-alert-timeout'])
+                throw new CommandError("!q target invalid syntax", `${msg.author}`);
+            } else if (args.length === 1 && !config['course-channels'].includes(qTarget)) {
+
+                replies.timedReply(msg, "you can only use !q like this in a csce channel", config['bot-alert-timeout']);
+                throw new CommandError("!q wrong channel", `${msg.author}`);
+            }
             
         } else if (args.length !== 0) {
             replies.timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout'])
             throw new CommandError("!q insufficient permissions", `${msg.author}`);
-        }
 
-        if (!config['course-channels'].includes(msg.channel.name)) {
+        } else if (!config['course-channels'].includes(qTarget)) {
             // Checks to see if in the right channel for a !q
-            replies.timedReply(msg, "you can only use !q in a csce channel", config['bot-alert-timeout']);
+            replies.timedReply(msg, "you can only use !q like this in a csce channel", config['bot-alert-timeout']);
             throw new CommandError("!q wrong channel", `${msg.author}`);
         }
 
@@ -82,7 +106,10 @@ module.exports = {
         }
 
         // Get the list then add the new user to the back
-        let course = msg.channel.name;
+        let course = qTarget;
+        if (!queues.has(qTarget)) {
+            queues.set(qTarget, []);
+        }
         queues.get(course).push({user: user.id, time: Date.now()})
 
         let position = getPlace(queues.get(course).length);
@@ -91,17 +118,20 @@ module.exports = {
         msg.guild.members.cache.get(user.id).roles.add(config['role-q-code']);
 
         if (adminQ) {
-            logger.log(`!q <@${user.id}> into ${course}`, `${msg.author}`)
-            msg.reply(`we queued ${msg.guild.members.cache.get(user.id)}, they're ${position} in line`);
+            logger.log(`!q <@${user.id}> into ${course}`, `${msg.author}`);
+            msg.reply(`we queued ${msg.guild.members.cache.get(user.id)} into ${qTargetPretty}, they're ${position} in line`);
         } else {
             logger.log(`!q self into ${course}`, `${msg.author}`)
             msg.reply(`queued! You're ${position} in line`);
         }
 
-        bot.channels.fetch(config['q-alert-id']).then(channel => {
-            const tag = `role-${msg.channel.name.substring(5)}-code`;
-            channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${msg.channel.name} queue and needs *your* help!`);
-        });
+        // Check to see if a course queue
+        if (!qTarget.startsWith('<@')) {
+            bot.channels.fetch(config['q-alert-id']).then(channel => {
+                const tag = `role-${qTarget.substring(5)}-code`;
+                channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${qTarget} queue and requires *your* assistance!`);
+            });
+        }
 
         save.saveQueue(queues);
 

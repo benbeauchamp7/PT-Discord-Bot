@@ -1,5 +1,5 @@
 {
-    "prefix": "!",
+    "prefix": "?",
     "do-moderate-chat": true,
     "do-archive-deletions": true,
 
@@ -23,6 +23,8 @@
 
     "elevated-roles": ["Peer Teacher", "Bot Manager", "Professor", "Off the Clock"],
     "queue-list-amount": 10,
+
+    "personal-q-aliases": ["personal", "mine"],
 
     "student-chan-specifier": "(TEMPORARY)",
     "text-room-timeout": 1200000,

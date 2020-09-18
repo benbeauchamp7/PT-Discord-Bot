@@ -48,7 +48,9 @@ module.exports = {
 
             readInterface.on('line', (line) => {
                 let data = line.split(',');
-
+                if (!queue.has(data[0])) {
+                    queue.set(data[0], []);
+                }
                 queue.get(data[0]).push( {user: data[1], time: parseInt(data[2], 10)} );
             });
         }
