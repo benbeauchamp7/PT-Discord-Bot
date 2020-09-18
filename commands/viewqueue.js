@@ -175,7 +175,7 @@ function combineQueues(msg, args, queues) {
     return combined;
 }
 
-function prepareEmbed(msg, courses, combined) {
+function prepareEmbed(msg, courses, combined, distro) {
     // Format courses nicely
     let courseStr = courses[0];
     for (let i = 1; i < courses.length - 1; i++) {
@@ -211,6 +211,13 @@ function prepareEmbed(msg, courses, combined) {
         let d = new Date(last.time);
         qTimeStr += '\n' + parseTime(d) + '\n';
     }
+
+    let distroStr = "";
+    // Format queue distributions
+    for (let [course, amount] of distro) {
+        if (amount === 0) { continue; }
+        distroStr += `\`${course}: ${amount}\`\n`
+    }
     
     if (combined.length === 0) {
         logger.log(`!vq empty for ${courses}`, `${msg.author}`)
@@ -226,7 +233,7 @@ function prepareEmbed(msg, courses, combined) {
     } else {
         logger.log(`!vq for ${courses}`, `${msg.author}`)
 
-        return new Discord.MessageEmbed()
+        let ret = new Discord.MessageEmbed()
             .setColor('#0099ff')
             .setTitle(`Queue order of ${courseStr}`)
             .addFields(
@@ -235,8 +242,31 @@ function prepareEmbed(msg, courses, combined) {
                 { name: 'Queue Time', value: qTimeStr, inline: true }
             )
             .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+
+        if (distroStr !== "") {
+            ret.addFields(
+                { name: 'Distribution', value: distroStr },
+            )
+        }
+
+        return ret;
     
     }
+}
+
+function getDistro(courses, queues) {
+    let distro = new Map();
+    for (course of courses) {
+        let q = queues.get("csce-" + course);
+
+        if (q != undefined) {
+            distro.set(course, q.length);
+        } else {
+            distro.set(course, 0);
+        }
+    }
+
+    return distro;
 }
 
 module.exports = {
@@ -271,10 +301,9 @@ module.exports = {
 
             let combined = combineQueues(msg, args, queues);
 
-            deliverable = prepareEmbed(msg, args, combined);
+            deliverable = prepareEmbed(msg, args, combined, getDistro(args, queues));
 
         } else {
-            // No args specified, use the current one
 
             // Make sure we're in a course channel
             if (config['course-channels'].includes(msg.channel.name)) {
