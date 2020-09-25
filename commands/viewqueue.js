@@ -129,7 +129,19 @@ function combineQueues(msg, args, queues) {
     for (course of args) {
         try {
             // Deep copy to bundles
-            targetQueues.push(JSON.parse(JSON.stringify(queues.get('csce-' + course))));
+            if (course.startsWith("<@")) {
+                if (!queues.has(course)) { queues.set(course, []); }
+                targetQueues.push(JSON.parse(JSON.stringify(queues.get(course))));
+
+            } else if (config["personal-q-aliases"].includes(course)) {
+                course = `<@${msg.author.id}>`;
+                if (!queues.has(course)) { queues.set(course, []); }
+                targetQueues.push(JSON.parse(JSON.stringify(queues.get(course))));
+
+            } else {
+                targetQueues.push(JSON.parse(JSON.stringify(queues.get('csce-' + course))));
+            }
+
         } catch (err) {
             replies.timedReply(msg, "Unrecognized course, please try again", config['bot-alert-timeout'])
             throw new CommandError(`unrecognized course in "[${args}]"`, `${msg.author.id}`)
@@ -161,11 +173,19 @@ function combineQueues(msg, args, queues) {
         }
 
         if (minIndex != null) {
-            combined.push({
-                user: targetQueues[minIndex][0].user, 
-                course: courses[minIndex], 
-                time: targetQueues[minIndex][0].time
-            });
+            if (courses[minIndex].startsWith('<@')) {
+                combined.push({
+                    user: targetQueues[minIndex][0].user, 
+                    course: 'Personal', 
+                    time: targetQueues[minIndex][0].time
+                });
+            } else {
+                combined.push({
+                    user: targetQueues[minIndex][0].user, 
+                    course: courses[minIndex], 
+                    time: targetQueues[minIndex][0].time
+                });
+            }
 
             targetQueues[minIndex].shift();
 
@@ -175,15 +195,30 @@ function combineQueues(msg, args, queues) {
     return combined;
 }
 
-function prepareEmbed(msg, courses, combined) {
+function prepareEmbed(msg, courses, combined, distro) {
+    // Replace personal queue alieses
+    for (let i = 0; i < courses.length; i++) {
+        if (courses[i].startsWith('<@')  || config["personal-q-aliases"].includes(courses[i])) {
+            courses[i] = "personal queue"
+        }
+    }
+
     // Format courses nicely
     let courseStr = courses[0];
     for (let i = 1; i < courses.length - 1; i++) {
-        courseStr += ', ' + courses[i];
+        if (courses[i].startsWith('<@') || config["personal-q-aliases"].includes(courses[i])) {
+            courseStr += ', ' + 'personal queue';
+        } else {
+            courseStr += ', ' + courses[i];
+        }
     }
 
     if (courses.length > 1) {
-        courseStr += ' and ' + courses[courses.length - 1];
+        if (courses[courses.length - 1].startsWith('<@')  || config["personal-q-aliases"].includes(courses[courses.length - 1])) {
+            courseStr += ' and ' + 'personal queue';
+        } else {
+            courseStr += ' and ' + courses[courses.length - 1];
+        }
     }
 
     // Format the queue order nicely
@@ -211,6 +246,13 @@ function prepareEmbed(msg, courses, combined) {
         let d = new Date(last.time);
         qTimeStr += '\n' + parseTime(d) + '\n';
     }
+
+    let distroStr = "";
+    // Format queue distributions
+    for (let [course, amount] of distro) {
+        if (amount === 0) { continue; }
+        distroStr += `\`${course}: ${amount}\`\n`
+    }
     
     if (combined.length === 0) {
         logger.log(`!vq empty for ${courses}`, `${msg.author}`)
@@ -226,7 +268,7 @@ function prepareEmbed(msg, courses, combined) {
     } else {
         logger.log(`!vq for ${courses}`, `${msg.author}`)
 
-        return new Discord.MessageEmbed()
+        let ret = new Discord.MessageEmbed()
             .setColor('#0099ff')
             .setTitle(`Queue order of ${courseStr}`)
             .addFields(
@@ -235,8 +277,31 @@ function prepareEmbed(msg, courses, combined) {
                 { name: 'Queue Time', value: qTimeStr, inline: true }
             )
             .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+
+        if (distroStr !== "") {
+            ret.addFields(
+                { name: 'Distribution', value: distroStr },
+            )
+        }
+
+        return ret;
     
     }
+}
+
+function getDistro(courses, queues) {
+    let distro = new Map();
+    for (course of courses) {
+        let q = queues.get("csce-" + course);
+
+        if (q != undefined) {
+            distro.set(course, q.length);
+        } else {
+            distro.set(course, 0);
+        }
+    }
+
+    return distro;
 }
 
 module.exports = {
@@ -264,17 +329,22 @@ module.exports = {
                     // Should print the queue using the peer teacher's classes
                     args = getCoursesFromUser(mention);
 
+                    // Get the personal queue if they have one
+                    if (queues.has(`<@${msg.author.id}>`)) {
+                        args.push(`<@${msg.author.id}>`);
+                    }
+
                 } else {
                     return getPlaceInLine(msg, qList, mention);
                 }
-            }   
+
+            }
 
             let combined = combineQueues(msg, args, queues);
 
-            deliverable = prepareEmbed(msg, args, combined);
+            deliverable = prepareEmbed(msg, args, combined, getDistro(args, queues));
 
         } else {
-            // No args specified, use the current one
 
             // Make sure we're in a course channel
             if (config['course-channels'].includes(msg.channel.name)) {

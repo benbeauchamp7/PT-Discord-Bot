@@ -2,11 +2,13 @@ const logger = require('../logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const CommandError = require('../commandError.js');
+const save = require('../save.js')
 
 module.exports = {
     name: 'offline',
     description: 'Adds the "Off the Clock" role',
-    async execute(message) {
+    async execute(message, args, options) {
+        let queues = options.queues;
         if (message.member.roles.cache.find(r => ["Off the Clock", "Peer Teacher", "Professor"].includes(r.name))) {
             message.guild.member(message.author).roles.add("743870484898250753"); // Add off the clock
             message.guild.member(message.author).roles.remove("731672600367071273"); // Remove PT
@@ -16,7 +18,12 @@ module.exports = {
                 message.delete({'timeout': config['bot-alert-timeout']});
             });
 
-            logger.log("!offline", `${message.author}`)
+            logger.log("!offline", `${message.author}`);
+
+            if (queues.has(`<@${message.author.id}>`)) {
+                queues.set(`<@${message.author.id}>`, []);
+                save.saveQueue(queues);
+            }
 
             return true;
         }

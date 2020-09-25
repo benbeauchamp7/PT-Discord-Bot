@@ -11,16 +11,6 @@ module.exports = {
         const timeout = config['bot-alert-timeout'];
         const chan = message.channel;
 
-        if (badWordFound === true) {
-            message.reply(`professional language only please`).then(reply => {
-                reply.delete({'timeout': timeout});
-                message.delete();
-            });
-
-            throw new CommandError("!topic bad word found", `${message.author}`);
-        }
-
-
         if (chan.parent.name.endsWith(config['student-chan-specifier'])) {
 
             chan.parent.setName(args.join(' ') + " " + config['student-chan-specifier']);
