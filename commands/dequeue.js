@@ -74,7 +74,7 @@ module.exports = {
         // User not found
         if (adminDQ) {
             replies.timedReply(msg, `${msg.guild.members.cache.get(user.id)} was not in a queue`, config['bot-alert-timeout'])
-            throw new CommandError(`!dq @${msg.guild.members.cache.get(user.id).name} not in queue`, `${msg.author}`);
+            throw new CommandError(`!dq <@${msg.guild.members.cache.get(user.id).name}> not in queue`, `${msg.author}`);
             
         } else {
             replies.timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
