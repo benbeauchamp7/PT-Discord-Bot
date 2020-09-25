@@ -57,7 +57,7 @@ module.exports = {
                     msg.guild.members.cache.get(user.id).roles.remove(config['role-q-code']);
 
                     if (adminDQ) {
-                        logger.log(`!dq @${user.id} from ${course}`, `${msg.author}`)
+                        logger.log(`!dq <@${user.id}> from ${course}`, `${msg.author}`)
                         msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue`);
                     } else {
                         logger.log(`!dq self from ${course}`, `${msg.author}`)
@@ -74,7 +74,8 @@ module.exports = {
         // User not found
         if (adminDQ) {
             replies.timedReply(msg, `${msg.guild.members.cache.get(user.id)} was not in a queue`, config['bot-alert-timeout'])
-            throw new CommandError(`!dq @${msg.guild.members.cache.get(user.id).name} not in queue`, `${msg.author}`);
+            console.log
+            throw new CommandError(`!dq <@${msg.guild.members.cache.get(user.id).name}> not in queue`, `${msg.author}`);
             
         } else {
             replies.timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
