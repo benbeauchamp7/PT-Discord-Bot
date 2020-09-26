@@ -119,17 +119,19 @@ module.exports = {
 
         if (adminQ) {
             logger.log(`!q <@${user.id}> into ${course}`, `${msg.author}`);
-            msg.reply(`we queued ${msg.guild.members.cache.get(user.id)} into ${qTargetPretty}, they're ${position} in line`);
+            msg.react('✅')
+            // msg.reply(`we queued ${msg.guild.members.cache.get(user.id)} into ${qTargetPretty}, they're ${position} in line`);
         } else {
             logger.log(`!q self into ${course}`, `${msg.author}`)
-            msg.reply(`queued! You're ${position} in line`);
+            msg.react('✅')
+            // msg.reply(`queued! You're ${position} in line`);
         }
 
         // Check to see if a course queue
         if (!qTarget.startsWith('<@')) {
             bot.channels.fetch(config['q-alert-id']).then(channel => {
                 const tag = `role-${qTarget.substring(5)}-code`;
-                channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${qTarget} queue and requires *your* assistance!`);
+                // channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${qTarget} queue and requires *your* assistance!`);
             });
         }
 

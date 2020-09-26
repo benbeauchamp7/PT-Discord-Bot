@@ -49,7 +49,7 @@ function displayCurrChan(msg, qList) {
             .addFields(
                 { name: 'Status', value: 'Queue is Empty!'}
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+            .setFooter(`Queue is valid as of ${parseTime(new Date())} & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`)
 
     } else {
         // For nonempty queues
@@ -62,7 +62,7 @@ function displayCurrChan(msg, qList) {
                 { name: 'Student', value: qNameStr, inline: true },
                 { name: 'Queue Time', value: qTimeStr, inline: true }
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+            .setFooter(`Queue is valid as of ${parseTime(new Date())} & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`)
     }
 }
 
@@ -265,7 +265,7 @@ function prepareEmbed(msg, courses, combined, distro) {
             .addFields(
                 { name: 'Status', value: 'Queue is Empty!'}
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+            .setFooter(`Queue is valid as of ${parseTime(new Date())} & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`)
 
     } else {
         logger.log(`!vq for ${courses}`, `${msg.author}`)
@@ -278,7 +278,7 @@ function prepareEmbed(msg, courses, combined, distro) {
                 { name: 'Course‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎', value: qClassStr, inline: true },
                 { name: 'Queue Time', value: qTimeStr, inline: true }
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+            .setFooter(`Queue is valid as of ${parseTime(new Date())} & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`)
 
         if (distroStr !== "") {
             ret.addFields(
@@ -369,6 +369,9 @@ module.exports = {
                 
                 activeVQs.set(msg.channel.name, [msg, embed]);
             }
+
+            embed.delete({'timeout': config['vq-expire']});
+            msg.delete({'timeout': config['vq-expire']});
         });
 
         return true;

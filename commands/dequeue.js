@@ -58,10 +58,12 @@ module.exports = {
 
                     if (adminDQ) {
                         logger.log(`!dq @${user.id} from ${course}`, `${msg.author}`)
-                        msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue`);
+                        msg.react('✅')
+                        // msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue`);
                     } else {
                         logger.log(`!dq self from ${course}`, `${msg.author}`)
-                        msg.reply(`removed! You're no longer queued`);
+                        msg.react('✅')
+                        // msg.reply(`removed! You're no longer queued`);
                     }
 
                     save.saveQueue(queues);

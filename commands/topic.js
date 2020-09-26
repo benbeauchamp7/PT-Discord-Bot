@@ -14,14 +14,18 @@ module.exports = {
         if (chan.parent.name.endsWith(config['student-chan-specifier'])) {
 
             chan.parent.setName(args.join(' ') + " " + config['student-chan-specifier']);
-            chan.setName(args.join('-'));
+            chan.setName(args.join('-')).then(() => {
+                message.react('✅');
+            });
 
             return true;
 
         } else if (chan.parent.name.endsWith(config['sticky-chan-specifier'])) {
 
             chan.parent.setName(args.join(' ') + " " + config['sticky-chan-specifier']);
-            chan.setName(args.join('-'));
+            chan.setName(args.join('-')).then(() => {
+                message.react('✅');
+            });;
 
             return true;
 
