@@ -58,7 +58,7 @@ module.exports = {
 
                         // Remove all permissions from everyone
                         cycleChan.updateOverwrite(cycleChan.guild.roles.everyone, {
-                            VIEW_CHANNEL: true,
+                            VIEW_CHANNEL: false,
                             CONNECT: false,
                             SPEAK: false
                         });
