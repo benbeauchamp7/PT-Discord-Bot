@@ -131,7 +131,7 @@ module.exports = {
         if (!qTarget.startsWith('<@')) {
             bot.channels.fetch(config['q-alert-id']).then(channel => {
                 const tag = `role-${qTarget.substring(5)}-code`;
-                // channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${qTarget} queue and requires *your* assistance!`);
+                channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${qTarget} queue and requires *your* assistance!`);
             });
         }
 
