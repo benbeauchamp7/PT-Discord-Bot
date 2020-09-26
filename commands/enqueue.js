@@ -43,7 +43,6 @@ module.exports = {
         let user = Object.assign({}, msg.author);
         let adminQ = false;
         let qTarget = msg.channel.name;
-        let qTargetPretty = qTarget;
 
         // Check for elevated user to allow args
         if (roleCheck(msg, config['elevated-roles']) && args.length !== 0) {

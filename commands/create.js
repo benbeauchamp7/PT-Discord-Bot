@@ -46,14 +46,36 @@ module.exports = {
                     }
                 });
 
-                // Create voice channel
-                message.guild.channels.create('Voice', {'type': 'voice'}).then(newVoiceChan => {
-                    newVoiceChan.setParent(category);
+                // Create voice channels
+                message.guild.channels.create('Voice', {'type': 'voice'}).then(voiceChan => {
+                    voiceChan.setParent(category);
                     if (isAuto) {
-                        user.voice.setChannel(newVoiceChan.id);
+                        user.voice.setChannel(voiceChan.id);
                     }
-                });
+                }).then(voiceChan => {
+                    message.guild.channels.create('Cycling Room', {'type': 'voice'}).then(cycleChan => {
+                        cycleChan.setParent(category);
 
+                        // Remove all permissions from everyone
+                        cycleChan.updateOverwrite(cycleChan.guild.roles.everyone, {
+                            VIEW_CHANNEL: true,
+                            CONNECT: false,
+                            SPEAK: false
+                        });
+
+                        // Set permissions for elevated members
+                        for (role of cycleChan.guild.roles.cache) {
+                            if (config['elevated-roles'].includes(role[1].name)) {
+                                cycleChan.updateOverwrite(role[1], {
+                                    VIEW_CHANNEL: true,
+                                    CONNECT: true,
+                                    SPEAK: true
+                                });
+                            }
+                        }
+
+                    });
+                });
             });
             
             logger.log("Channel Created (txt)", `${message.author}`)
