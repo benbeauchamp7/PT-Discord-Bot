@@ -256,6 +256,11 @@ function prepareEmbed(msg, courses, combined, distro) {
         distroStr += `\`${course}: ${amount}\`\n`
     }
     
+    let footerString = `Queue is valid as of ${parseTime(new Date())}`
+    if (msg.channel.name !== "command-spam") {
+        footerString += ` & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`;
+    }
+
     if (combined.length === 0) {
         logger.log(`!vq empty for ${courses}`, `${msg.author}`)
 
@@ -265,7 +270,7 @@ function prepareEmbed(msg, courses, combined, distro) {
             .addFields(
                 { name: 'Status', value: 'Queue is Empty!'}
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())} & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`)
+            .setFooter(footerString)
 
     } else {
         logger.log(`!vq for ${courses}`, `${msg.author}`)
@@ -278,7 +283,7 @@ function prepareEmbed(msg, courses, combined, distro) {
                 { name: 'Course‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎', value: qClassStr, inline: true },
                 { name: 'Queue Time', value: qTimeStr, inline: true }
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())} & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`)
+            .setFooter(footerString)
 
         if (distroStr !== "") {
             ret.addFields(
@@ -370,8 +375,10 @@ module.exports = {
                 activeVQs.set(msg.channel.name, [msg, embed]);
             }
 
-            embed.delete({'timeout': config['vq-expire']});
-            msg.delete({'timeout': config['vq-expire']});
+            if (msg.channel.name !== "command-spam") {
+                embed.delete({'timeout': config['vq-expire']});
+                msg.delete({'timeout': config['vq-expire']});
+            }
         });
 
         return true;

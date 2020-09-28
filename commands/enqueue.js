@@ -52,7 +52,7 @@ module.exports = {
             let mentionID = checkMention(args[0], msg);
             if (!mentionID) {
                 replies.timedReply(msg, "that user does not exist (maybe a broken mention?)", config['bot-alert-timeout'])
-                throw new CommandError(`!q undefined user [${user.id}]`, `${msg.author}`);
+                throw new CommandError(`!q undefined user ${args[0]}`, `${msg.author}`);
             }
             adminQ = true;
             user.id = mentionID;
