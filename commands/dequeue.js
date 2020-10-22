@@ -59,7 +59,7 @@ module.exports = {
                     if (adminDQ) {
                         logger.log(`!dq <@${user.id}> from ${course}`, `${msg.author}`)
                         msg.react('✅')
-                        // msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue`);
+                        msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue, don't forget to have them fill out the survey!\n<https://forms.gle/ZhiFS4AkzWxY1tzR7>`);
                     } else {
                         logger.log(`!dq self from ${course}`, `${msg.author}`)
                         msg.react('✅')
