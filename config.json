@@ -1,5 +1,5 @@
 {
-    "prefix": "?",
+    "prefix": "!",
     "do-moderate-chat": true,
     "do-archive-deletions": true,
 
@@ -20,6 +20,7 @@
     "archive-timeout": 86400000,
     "archive-timeout-update": 3600000,
     "channel-create-cooldown": 120000,
+    "vq-expire": 900000,
 
     "elevated-roles": ["Peer Teacher", "Bot Manager", "Professor", "Off the Clock"],
     "queue-list-amount": 10,
@@ -49,6 +50,7 @@
     "role-222-code": "737104680324169810",
     "role-312-code": "737104695159554050",
     "role-313-code": "737104719335522438",
+    "role-313hnr-code": "759191082843242498",
     "role-314-code": "737104737790328873",
     "role-315-code": "737104769000276008",
 
@@ -56,8 +58,8 @@
 
     "new-chatroom-msg": "You can use !topic to rename this channel if your discussion changes topics. When done, use !end to close the chat room.",
 
-    "course-channels": ["csce-110", "csce-111", "csce-121", "csce-206", "csce-221", "csce-222", "csce-312", "csce-313", "csce-314", "csce-315"],
-    "emote-names": ["110", "111", "121", "206", "221", "222", "312", "313", "314", "315"],
+    "course-channels": ["csce-110", "csce-111", "csce-121", "csce-206", "csce-221", "csce-222", "csce-312", "csce-313", "csce-313hnr", "csce-314", "csce-315"],
+    "emote-names": ["110", "111", "121", "206", "221", "222", "312", "313", "313hnr", "314", "315"],
 
     "chat-moderation-messages": [
         "please use professional language",

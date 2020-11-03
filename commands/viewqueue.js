@@ -49,7 +49,7 @@ function displayCurrChan(msg, qList) {
             .addFields(
                 { name: 'Status', value: 'Queue is Empty!'}
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+            .setFooter(`Queue is valid as of ${parseTime(new Date())} & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`)
 
     } else {
         // For nonempty queues
@@ -62,7 +62,7 @@ function displayCurrChan(msg, qList) {
                 { name: 'Student', value: qNameStr, inline: true },
                 { name: 'Queue Time', value: qTimeStr, inline: true }
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+            .setFooter(`Queue is valid as of ${parseTime(new Date())} & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`)
     }
 }
 
@@ -105,19 +105,21 @@ function getCoursesFromUser(userMention) {
     return args;
 }
 
-function getPlaceInLine(msg, qList, user) {
+function getPlaceInLine(msg, queues, user) {
 
     // Tell them the mentioned's spot in line
-    for (let i = 0; i < qList.length; i++) {
-        if (user.id === qList[i].user) {
-            let position = getPlace(i + 1);
-            
-            msg.channel.send(`${user} is ${position} in line`);
-            logger.log(`!vq ${user.name} in line`, `${msg.author}`)
-            return true;
+    for (let [key, qList] of queues)
+        for (let i = 0; i < qList.length; i++) {
+            if (user.id === qList[i].user) {
+                let position = getPlace(i + 1);
+                
+                msg.channel.send(`${user} is ${position} in the ${key} queue`);
+                logger.log(`!vq ${user.name} in line`, `${msg.author}`)
+                return true;
+            }
         }
-    }
-    // Person not found in this queue
+
+    // Person not found in the queues
     msg.channel.send(`${user} is not in line`);
     throw new CommandError(`!vq ${user.name} not in line`, `${msg.author}`);
 }
@@ -254,6 +256,11 @@ function prepareEmbed(msg, courses, combined, distro) {
         distroStr += `\`${course}: ${amount}\`\n`
     }
     
+    let footerString = `Queue is valid as of ${parseTime(new Date())}`
+    if (msg.channel.name !== "command-spam") {
+        footerString += ` & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`;
+    }
+
     if (combined.length === 0) {
         logger.log(`!vq empty for ${courses}`, `${msg.author}`)
 
@@ -263,7 +270,7 @@ function prepareEmbed(msg, courses, combined, distro) {
             .addFields(
                 { name: 'Status', value: 'Queue is Empty!'}
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+            .setFooter(footerString)
 
     } else {
         logger.log(`!vq for ${courses}`, `${msg.author}`)
@@ -276,7 +283,7 @@ function prepareEmbed(msg, courses, combined, distro) {
                 { name: 'Course‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎', value: qClassStr, inline: true },
                 { name: 'Queue Time', value: qTimeStr, inline: true }
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())}`)
+            .setFooter(footerString)
 
         if (distroStr !== "") {
             ret.addFields(
@@ -335,7 +342,7 @@ module.exports = {
                     }
 
                 } else {
-                    return getPlaceInLine(msg, qList, mention);
+                    return getPlaceInLine(msg, queues, mention);
                 }
 
             }
@@ -366,6 +373,11 @@ module.exports = {
                 }
                 
                 activeVQs.set(msg.channel.name, [msg, embed]);
+            }
+
+            if (msg.channel.name !== "command-spam") {
+                embed.delete({'timeout': config['vq-expire']});
+                msg.delete({'timeout': config['vq-expire']});
             }
         });
 

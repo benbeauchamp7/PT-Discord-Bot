@@ -9,7 +9,7 @@ module.exports = {
         const timeout = config['bot-alert-timeout'];
 
         // Only bot managers may use this command
-        if (!message.member.roles.cache.find(r => r.name === "Bot Manager")) {
+        if (!message.member.roles.cache.find(r => r.name === "Moderator")) {
             message.reply(`Insufficent permissions`).then(reply => {
                 reply.delete({'timeout': timeout});
                 message.delete({'timeout': timeout});
@@ -31,7 +31,9 @@ module.exports = {
         const emoteNames = config['emote-names']
         let emotes = [];
         let label = ""
+        console.log(emoteNames)
         for (emoji of message.guild.emojis.cache) {
+            console.log(emoji[1].name)
             if (emoteNames.includes(emoji[1].name)) {
                 emotes.push(emoji[1]);
             }

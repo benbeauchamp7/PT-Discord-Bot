@@ -52,7 +52,7 @@ module.exports = {
             let mentionID = checkMention(args[0], msg);
             if (!mentionID) {
                 replies.timedReply(msg, "that user does not exist (maybe a broken mention?)", config['bot-alert-timeout'])
-                throw new CommandError(`!q undefined user [${user.id}]`, `${msg.author}`);
+                throw new CommandError(`!q undefined user ${args[0]}`, `${msg.author}`);
             }
             adminQ = true;
             user.id = mentionID;
@@ -119,10 +119,12 @@ module.exports = {
 
         if (adminQ) {
             logger.log(`!q <@${user.id}> into ${course}`, `${msg.author}`);
-            msg.reply(`we queued ${msg.guild.members.cache.get(user.id)} into ${qTargetPretty}, they're ${position} in line`);
+            msg.react('✅')
+            // msg.reply(`we queued ${msg.guild.members.cache.get(user.id)} into ${qTargetPretty}, they're ${position} in line`);
         } else {
             logger.log(`!q self into ${course}`, `${msg.author}`)
-            msg.reply(`queued! You're ${position} in line`);
+            msg.react('✅')
+            // msg.reply(`queued! You're ${position} in line`);
         }
 
         // Check to see if a course queue
