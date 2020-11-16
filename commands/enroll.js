@@ -10,7 +10,7 @@ module.exports = {
 
         // Only bot managers may use this command
         if (!message.member.roles.cache.find(r => r.name === "Moderator")) {
-            message.reply(`Insufficent permissions`).then(reply => {
+            message.reply(`insufficient permissions`).then(reply => {
                 reply.delete({'timeout': timeout});
                 message.delete({'timeout': timeout});
             });

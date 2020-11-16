@@ -3,6 +3,7 @@
     "do-moderate-chat": true,
     "do-archive-deletions": true,
 
+    "persistant-data-path": "PersistantData/",
     "queue-file-path": "PersistantData/queueSave.csv",
     "chan-file-path": "PersistantData/chanSave.csv",
 

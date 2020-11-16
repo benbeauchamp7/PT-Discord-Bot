@@ -127,7 +127,7 @@ module.exports = {
 
             return true;
         } else {
-            message.reply("insufficent permissions.").then(reply => {
+            message.reply("insufficient permissions.").then(reply => {
                 reply.delete({"timeout": config['bot-alert-timeout']});
                 message.delete({"timeout": config['bot-alert-timeout']});
             });

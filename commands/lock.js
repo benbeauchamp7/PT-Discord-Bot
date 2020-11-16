@@ -18,7 +18,7 @@ module.exports = {
 
                 // While in a matching voice channel
                 let voiceChan = message.member.voice.channel;
-                if (voiceChan !== null && voiceChan.parent === parent) {
+                if (voiceChan !== null && voiceChan.parent === parent && voiceChan.name === "Voice") {
                     // Remove all permissions from everyone
                     voiceChan.updateOverwrite(voiceChan.guild.roles.everyone, {
                         VIEW_CHANNEL: true,
@@ -52,7 +52,7 @@ module.exports = {
 
                 } else {
                     // You must be in the corresponding voice channel
-                    replies.timedReply(message, "you must be in this room's voice channel to use this command", config['bot-alert-timeout']);
+                    replies.timedReply(message, "you must be in this room's \"Voice\" channel to use this command", config['bot-alert-timeout']);
                     throw new CommandError("!lock not in VC", `${message.author}`);
                 }
 
@@ -63,9 +63,9 @@ module.exports = {
             }
 
         } else {
-            // Insufficent permissions
+            // insufficient permissions
             replies.timedReply(message, "you do not have permission to use this command", config['bot-alert-timeout']);
-            throw new CommandError("!lock insufficent permissions", `${message.author}`);
+            throw new CommandError("!lock insufficient permissions", `${message.author}`);
         }
 
 

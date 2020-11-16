@@ -11,10 +11,8 @@ module.exports = {
         const isAuto = options.auto;
         const cooldown = options.cooldown;
         const timeout = config['bot-alert-timeout'];
-        const bannedTitleWords = config['banned-title-words']
         const chan = message.channel;
 
-        var badWordFound = false;
         if (chan.name == 'create-room' || chan.name == 'bot-channel') {
 
             // Don't let user create a channel if they are on cooldown
@@ -52,6 +50,7 @@ module.exports = {
                     if (isAuto) {
                         user.voice.setChannel(voiceChan.id);
                     }
+
                 }).then(voiceChan => {
                     message.guild.channels.create('Cycling Room', {'type': 'voice'}).then(cycleChan => {
                         cycleChan.setParent(category);

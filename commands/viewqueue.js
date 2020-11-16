@@ -27,13 +27,13 @@ function parseTime(time) {
     return `${hrs}:${mins} ${amPm}`;
 }
 
-function displayCurrChan(msg, qList) {
+async function displayCurrChan(msg, qList) {
     let qNameStr = "";
     let qTimeStr = "";
 
     // Prepare display strings
     for (let i = 0; i < qList.length; i++) {
-        qNameStr += `${i + 1}. ${msg.guild.members.cache.get(qList[i].user)}\n`
+        qNameStr += `${i + 1}. ${await msg.guild.members.fetch(qList[i].user)}\n`
         let d = new Date(qList[i].time);
         qTimeStr += parseTime(d) + '\n';
     }
@@ -66,16 +66,16 @@ function displayCurrChan(msg, qList) {
     }
 }
 
-function getTarget(msg, mention) {
+async function getTarget(msg, mention) {
 
     // Check for valid mention and for mentioned user's roles if mention
     let mentionUser = undefined;
     if (mention.match(/^<@!?(\d+)>$/g)) {
-        mentionUser = msg.guild.members.cache.get(mention.replace(/[\\<>@#&!]/g, ""));
+        mentionUser = await msg.guild.members.fetch(mention.replace(/[\\<>@#&!]/g, ""));
     }
 
     if (mention == 'me') {
-        mentionUser = msg.guild.members.cache.get(msg.author.id);
+        mentionUser = await msg.guild.members.fetch(msg.author.id);
     }
 
     if (mention === undefined) {
@@ -99,14 +99,13 @@ function getCoursesFromUser(userMention) {
     // If peer teacher has no classes, fail the command
     if (args.length === 0) {
         timedMessage(msg, `${mention} isn't registered for any classes (maybe they forgot to stop by <#737169678677311578>?)`, config['bot-alert-timeout'])
-        throw new CommandError(`!vq ${mention.name} not registered`, `${msg.author}`);
+        throw new CommandError(`!vq ${mention} not registered`, `${msg.author}`);
     }
 
     return args;
 }
 
 function getPlaceInLine(msg, queues, user) {
-
     // Tell them the mentioned's spot in line
     for (let [key, qList] of queues)
         for (let i = 0; i < qList.length; i++) {
@@ -114,14 +113,14 @@ function getPlaceInLine(msg, queues, user) {
                 let position = getPlace(i + 1);
                 
                 msg.channel.send(`${user} is ${position} in the ${key} queue`);
-                logger.log(`!vq ${user.name} in line`, `${msg.author}`)
+                logger.log(`!vq ${user} in line`, `${msg.author}`)
                 return true;
             }
         }
 
     // Person not found in the queues
     msg.channel.send(`${user} is not in line`);
-    throw new CommandError(`!vq ${user.name} not in line`, `${msg.author}`);
+    throw new CommandError(`!vq ${user} not in line`, `${msg.author}`);
 }
 
 function combineQueues(msg, args, queues) {
@@ -197,7 +196,7 @@ function combineQueues(msg, args, queues) {
     return combined;
 }
 
-function prepareEmbed(msg, courses, combined, distro) {
+async function prepareEmbed(msg, courses, combined, distro) {
     // Replace personal queue alieses
     for (let i = 0; i < courses.length; i++) {
         if (courses[i].startsWith('<@')  || config["personal-q-aliases"].includes(courses[i])) {
@@ -230,7 +229,7 @@ function prepareEmbed(msg, courses, combined, distro) {
     let i = 0;
     for (i = 0; i < combined.length && i < config['queue-list-amount']; i++) {
         
-        qNameStr += `${i + 1}. ${msg.guild.members.cache.get(combined[i].user)}\n`
+        qNameStr += `${i + 1}. ${await msg.guild.members.fetch(combined[i].user)}\n`
         qClassStr += `${combined[i].course}\n`;
 
         let d = new Date(combined[i].time);
@@ -243,7 +242,7 @@ function prepareEmbed(msg, courses, combined, distro) {
         // Want to show the last position
         let last = combined[combined.length - 1];
 
-        qNameStr += `...\n${combined.length}. ${msg.guild.members.cache.get(last.user)}\n`
+        qNameStr += `...\n${combined.length}. ${await msg.guild.members.fetch(last.user)}\n`
         qClassStr += `\n${last.course}\n`
         let d = new Date(last.time);
         qTimeStr += '\n' + parseTime(d) + '\n';
@@ -312,7 +311,7 @@ module.exports = {
     async execute(msg, args, options) {
         let queues = options.queues;
         let activeVQs = options.activeVQs;
-        let deliverable = "An error occured while creating the embed"
+        let deliverable = "An error happened while creating the embed"
 
         let qList = await queues.get(msg.channel.name);
         
@@ -326,7 +325,7 @@ module.exports = {
             } else if (args[0].match(/^<@!?(\d+)>$/g) || args[0] == 'me') {
                 // Discern between mention protocol and course protocol
 
-                let mention = getTarget(msg, args[0]);
+                let mention = await getTarget(msg, args[0]);
                 if (mention.roles.cache.find(r => r.name === "Peer Teacher" || r.name === "Off the Clock")) {
                     // Should print the queue using the peer teacher's classes
                     args = getCoursesFromUser(mention);
@@ -344,13 +343,13 @@ module.exports = {
 
             let combined = combineQueues(msg, args, queues);
 
-            deliverable = prepareEmbed(msg, args, combined, getDistro(args, queues));
+            deliverable = await prepareEmbed(msg, args, combined, getDistro(args, queues));
 
         } else {
 
             // Make sure we're in a course channel
             if (config['course-channels'].includes(msg.channel.name)) {
-                deliverable = displayCurrChan(msg, qList);
+                deliverable = await displayCurrChan(msg, qList);
             } else {
                 replies.timedReply(msg, "you can only use !vq without arguments in a csce channel", config['bot-alert-timeout']);
                 throw new CommandError("!vq wrong channel", `${msg.author}`);

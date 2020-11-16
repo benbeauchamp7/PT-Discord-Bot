@@ -14,7 +14,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
-            throw new CommandError("!sticky insufficent permissions", `${message.author}`);
+            throw new CommandError("!sticky insufficient permissions", `${message.author}`);
         }
 
         const timeout = config['bot-alert-timeout'];
