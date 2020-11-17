@@ -5,11 +5,11 @@ const replies = require('../replies.js');
 const save = require('../save.js');
 const CommandError = require('../commandError.js');
 
-function checkMention(mention, msg) {
+async function checkMention(mention, msg) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
         let id = mention.replace(/[\\<>@#&!]/g, "");
 
-        if (msg.guild.members.cache.get(id) === undefined) { return false; }
+        if (await msg.guild.members.fetch(id) === undefined) { return false; }
         return id;
     }
     return false;
@@ -43,13 +43,12 @@ module.exports = {
         let user = Object.assign({}, msg.author);
         let adminQ = false;
         let qTarget = msg.channel.name;
-        let qTargetPretty = qTarget;
 
         // Check for elevated user to allow args
         if (roleCheck(msg, config['elevated-roles']) && args.length !== 0) {
             
             // If a valid mention
-            let mentionID = checkMention(args[0], msg);
+            let mentionID = await checkMention(args[0], msg);
             if (!mentionID) {
                 replies.timedReply(msg, "that user does not exist (maybe a broken mention?)", config['bot-alert-timeout'])
                 throw new CommandError(`!q undefined user ${args[0]}`, `${msg.author}`);
@@ -69,7 +68,6 @@ module.exports = {
                     replies.timedReply(msg, "you can only place students into course queues (121, 221, ...), or your personal queue (with 'personal' or 'mine')", config['bot-alert-timeout']);
                     throw new CommandError("!q invalid target", `${msg.author}`);
                 }
-
 
             } else if (args.length > 1) {
                 replies.timedReply(msg, "target !q syntax: `!q @user INTO [<course number> | personal | mine]`", config['bot-alert-timeout'])
@@ -112,10 +110,10 @@ module.exports = {
         }
         queues.get(course).push({user: user.id, time: Date.now()})
 
-        let position = getPlace(queues.get(course).length);
-
         // Give them the queued role
-        msg.guild.members.cache.get(user.id).roles.add(config['role-q-code']);
+        msg.guild.members.fetch(user.id).then(user => {
+            user.roles.add(config['role-q-code']);
+        })
 
         if (adminQ) {
             logger.log(`!q <@${user.id}> into ${course}`, `${msg.author}`);

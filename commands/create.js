@@ -11,10 +11,8 @@ module.exports = {
         const isAuto = options.auto;
         const cooldown = options.cooldown;
         const timeout = config['bot-alert-timeout'];
-        const bannedTitleWords = config['banned-title-words']
         const chan = message.channel;
 
-        var badWordFound = false;
         if (chan.name == 'create-room' || chan.name == 'bot-channel') {
 
             // Don't let user create a channel if they are on cooldown
@@ -46,11 +44,11 @@ module.exports = {
                     }
                 });
 
-                // Create voice channel
-                message.guild.channels.create('Voice', {'type': 'voice'}).then(newVoiceChan => {
-                    newVoiceChan.setParent(category);
+                // Create voice channels
+                message.guild.channels.create('Voice', {'type': 'voice'}).then(voiceChan => {
+                    voiceChan.setParent(category);
                     if (isAuto) {
-                        user.voice.setChannel(newVoiceChan.id);
+                        user.voice.setChannel(voiceChan.id);
                     }
 
                 }).then(voiceChan => {
@@ -78,7 +76,6 @@ module.exports = {
 
                     // });
                 });
-
             });
             
             logger.log("Channel Created (txt)", `${message.author}`)

@@ -43,7 +43,7 @@ module.exports = {
                     message.delete({'timeout': timeout});
                 });
 
-                throw new CommandError("PT !end failed (insufficent perms)", `${message.author}`);
+                throw new CommandError("PT !end failed (insufficient perms)", `${message.author}`);
             }
 
             // Remove all servers in the same category (archive text channel if applicable)

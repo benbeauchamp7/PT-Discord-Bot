@@ -39,9 +39,9 @@ module.exports = {
             }
 
         } else {
-            // Insufficent permissions
+            // insufficient permissions
             replies.timedReply(message, "you do not have permission to use this command", config['bot-alert-timeout']);
-            throw new CommandError("!unlock insufficent permissions", `${message.author}`);
+            throw new CommandError("!unlock insufficient permissions", `${message.author}`);
         }
 
 

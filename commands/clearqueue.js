@@ -3,6 +3,8 @@ const Discord = require('discord.js');
 const fs = require("fs");
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const save = require("../save.js");
+const replies = require('../replies.js');
+const CommandError = require('../commandError.js');
 
 module.exports = {
     name: 'clearqueue',
@@ -43,6 +45,12 @@ module.exports = {
                             }
                             logger.log(`!clearq called`, `${message.author}`);
 
+                            // Remove queued role from everyone
+                            let queuedMembers = message.guild.roles.cache.get(config['role-q-code']).members;
+                            for ([id, member] of queuedMembers) {
+                                member.roles.remove(config['role-q-code'])
+                            }
+
                             save.saveQueue(queues);
     
                         });
@@ -64,6 +72,9 @@ module.exports = {
                     }
                 });
             });
+        } else {
+            replies.timedReply(message, "you do not have permission to use this command.", config["bot-alert-timeout"]);
+            throw new CommandError("!clearqueue insufficient perms", `${message.author}`);
         }
     }
 }

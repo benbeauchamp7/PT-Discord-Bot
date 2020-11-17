@@ -40,6 +40,7 @@ let activeVQs = new Map();
 let cooldownUsers = new Map();
 
 let queues = new Map();
+let cycles = new Map();
 
 function addChanInterval(categoryChannel) {
     warnMap.set(categoryChannel.id, null);
@@ -52,12 +53,13 @@ function addChanInterval(categoryChannel) {
 async function checkChanTimeout(categoryChannel) {
 
     // Get the channels from the student category
-    var textChan, voiceChan;
+    let textChan = undefined;
+    let voiceChanCount = 0;
     for (const chan of categoryChannel.children) {
         if (chan[1].type == 'text') {
             textChan = chan[1];
         } else if (chan[1].type == 'voice') {
-            voiceChan = chan[1];
+            voiceChanCount += chan[1].members.size;
         }
     }
     
@@ -70,7 +72,7 @@ async function checkChanTimeout(categoryChannel) {
     ||  (textChan.parent.name.endsWith(config["sticky-chan-specifier"]) && last.createdAt.getTime() + config['sticky-room-timeout'] < Date.now()) ) {
 
         // And the cooresponding voice channel is also empty
-        if (voiceChan.members.size === 0) {
+        if (voiceChanCount === 0) {
 
             // Begin countdown to message deletion
             if (warnMap.get(categoryChannel.id) === null) {
@@ -99,7 +101,6 @@ async function checkChanTimeout(categoryChannel) {
     }
 }
 
-
 function isOnCooldown(userID) {
     // Take member of cooldown if enough time has passed (unless it's me)
     if (cooldownUsers.has(userID) && ((cooldownUsers.get(userID) + config['channel-create-cooldown'] < Date.now()) || userID === '335481074236915712')) {
@@ -108,9 +109,6 @@ function isOnCooldown(userID) {
 
     return cooldownUsers.has(userID);
 }
-
-// Declare queue maps that work in parallel, one containing the times people joined and the other containing the user IDs
-// Each course maps to a basic array acting as a queue, each populated with user ids or time stamps (repsectively)
 
 bot.on('ready', () => {
     // Ping console when bot is ready
@@ -171,9 +169,31 @@ bot.on('raw', packet => {
 bot.on('voiceStateUpdate', (oldMember, newMember) => {
     // Click to create room functionality
     const channelJoined = newMember.channelID;
+    const channelLeft = oldMember.channelID;
     const user = newMember.member
 
-    if (channelJoined === null) { return; }
+    if (channelLeft !== null && channelLeft !== undefined && channelLeft.name === "Cycling Room") {
+        // Remove from cycle
+        if (!cycles.has(msg.channel.id)) { cycles.set(voiceChan.id, []); }
+        let cycle = cycles.get(voiceChan.id);
+
+        const index = array.indexOf(voiceChan.id);
+        if (index > -1) {
+            cycle.splice(index, 1);
+        }
+
+        cycles.set(voiceChan.id, cycle);
+
+    } else if (channelJoined !== null && channelJoined !== undefined && channelJoined.name == "Cycling Room") {
+        // Record spot in cycle
+        if (!cycles.has(msg.channel.id)) { cycles.set(voiceChan.id, []); }
+        let cycle = cycles.get(voiceChan.id);
+        cycle.push(channelJoined.member);
+        cycles.set(voiceChan.id, cycle);
+
+    }
+
+    if (channelJoined === null || channelJoined === undefined) { return; }
 
     if (channelJoined == config['click-to-join-id']) {
         // If the user isn't on cooldown for creating a room
@@ -267,7 +287,8 @@ bot.on('message', msg => {
                 user: msg.author,
                 cooldown: cooldownUsers, 
                 queues: queues,
-                activeVQs: activeVQs
+                activeVQs: activeVQs,
+                cycles: cycles
             }
             isOnCooldown(msg.author.id); // Clear cooldown if applicable
 
@@ -299,7 +320,7 @@ bot.on('message', msg => {
 // Catch reactions for role assignment
 bot.on('messageReactionAdd', async (reaction, user) => {
     if (reaction === undefined) {
-        logger.log(`reaction undefined`, `<@${user.id}>`);
+        logger.log(`reaction undefined`, `<@${user}>`);
         return;
     } else if (user.id === undefined) {
         logger.log(`user id undefined`, `<@${reaction}>`);

@@ -31,6 +31,18 @@ module.exports = {
 \n\`!unlock\`
 > Reverses the effects of \`!lock\` and \`!superlock\``},
 
+                    { name: "Cycle system", value: `\`!cycle @user @user @user...\`
+> Adds listed users to the cycle
+\n\`!cycle <course> <amount>\`
+> Adds the first <amount> users from the <course> queue to the cycle and removes them from the queue
+\n\`!next\`
+> Switches the current student in the "Voice" channel with the next student in the cycle
+\n\`!next @user\`
+> Switches the current student in the "Voice" channel with the specified user in the cycle. This adjusts the specified user's spot in the cycle queue
+\n\`!decycle @user\`
+> Removes a student from the cycle. This prevents them from rejoining the cycle queue
+`},
+
                     { name: "Administrative commands", value: `\`!#ban @user\`
 > Bans a student, this action is monitored
 \n\`!#dc @user\`

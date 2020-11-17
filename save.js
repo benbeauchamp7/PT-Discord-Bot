@@ -4,14 +4,14 @@ const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
 module.exports = {
     // queue maps courses to {user, time} objects
-	saveQueue: function(queue) {
+    saveQueue: function(queue) {
 
         // Clear the file
         fs.writeFile(config['queue-file-path'], '', (error) => {
-			if (error) {
-				console.log(">> The file could not be opened <<");
-				console.log(error)
-			}
+            if (error) {
+                console.log(">> The file could not be opened <<");
+                console.log(error)
+            }
         });
         
         // Go through all courses
@@ -36,23 +36,22 @@ module.exports = {
             queue.set(course, []);
         }
 
-
         // Make sure the file exists
         if (fs.existsSync(config['queue-file-path'])) {
 
-            const readInterface = readline.createInterface({
-                input: fs.createReadStream(config['queue-file-path']),
-                output: null,
-                console: false
-            });
+            let lines = fs.readFileSync(config['queue-file-path'], 'utf-8').split('\n');
+            for (line of lines) {
+                if (line == "") {
+                    continue
+                }
 
-            readInterface.on('line', (line) => {
-                let data = line.split(',');
+                var data = line.split(',');
                 if (!queue.has(data[0])) {
                     queue.set(data[0], []);
                 }
+
                 queue.get(data[0]).push( {user: data[1], time: parseInt(data[2], 10)} );
-            });
+            }
         }
         return queue;
     }

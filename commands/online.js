@@ -21,6 +21,6 @@ module.exports = {
             return true;
         }
 
-        throw new CommandError("!offline insufficent permission", `${message.author}`);
+        throw new CommandError("!offline insufficient permission", `${message.author}`);
     }
 }
