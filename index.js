@@ -290,6 +290,7 @@ bot.on('message', msg => {
                 activeVQs: activeVQs,
                 cycles: cycles
             }
+            
             isOnCooldown(msg.author.id); // Clear cooldown if applicable
 
             bot.commands.get(command).execute(msg, args, options).then(didSucceed => {
