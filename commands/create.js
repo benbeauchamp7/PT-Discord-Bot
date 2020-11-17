@@ -52,6 +52,31 @@ module.exports = {
                     if (isAuto) {
                         user.voice.setChannel(newVoiceChan.id);
                     }
+
+                }).then(voiceChan => {
+                    // TODO: CYCLES
+                    // message.guild.channels.create('Cycling Room', {'type': 'voice'}).then(cycleChan => {
+                    //     cycleChan.setParent(category);
+
+                    //     // Remove all permissions from everyone
+                    //     cycleChan.updateOverwrite(cycleChan.guild.roles.everyone, {
+                    //         VIEW_CHANNEL: false,
+                    //         CONNECT: false,
+                    //         SPEAK: false
+                    //     });
+
+                    //     // Set permissions for elevated members
+                    //     for (role of cycleChan.guild.roles.cache) {
+                    //         if (config['elevated-roles'].includes(role[1].name)) {
+                    //             cycleChan.updateOverwrite(role[1], {
+                    //                 VIEW_CHANNEL: true,
+                    //                 CONNECT: true,
+                    //                 SPEAK: true
+                    //             });
+                    //         }
+                    //     }
+
+                    // });
                 });
 
             });

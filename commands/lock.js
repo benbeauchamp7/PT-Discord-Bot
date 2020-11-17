@@ -23,7 +23,7 @@ module.exports = {
                     voiceChan.updateOverwrite(voiceChan.guild.roles.everyone, {
                         VIEW_CHANNEL: true,
                         CONNECT: false,
-                        SPEAK: false
+                        SPEAK: true
                     });
 
                     // Set permissions for all the occupant members

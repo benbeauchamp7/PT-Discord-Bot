@@ -1,15 +1,15 @@
-const logger = require('../logging.js');
+  const logger = require('../logging.js');
 const fs = require("fs");
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const replies = require('../replies.js');
 const save = require('../save.js');
 const CommandError = require('../commandError.js');
 
-function checkMention(mention, msg) {
+async function checkMention(mention, msg) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
         let id = mention.replace(/[\\<>@#&!]/g, "");
 
-        if (msg.guild.members.cache.get(id) === undefined) { return false; }
+        if (await msg.guild.members.fetch(id) === undefined) { return false; }
 
         return id;
     }
@@ -28,59 +28,89 @@ module.exports = {
         let user = Object.assign({}, msg.author);
         let adminDQ = false;
 
+        let target = new Map();
+        target = msg.mentions.users;
+
         // Check for elevated user to allow args
         if (roleCheck(msg, config['elevated-roles']) && args.length !== 0) {
             
-            // If a valid mention
-            let mentionID = checkMention(args[0], msg);
-            if (!mentionID) {
-                replies.timedReply(msg, "that user does not exist (maybe a broken mention?)", config['bot-alert-timeout']);
-                throw new CommandError(`!dq undefined user ${args[0]}`, `${msg.author}`);
+            if (target.size == 0) {
+                replies.timedReply(msg, `your message \`${msg}\` contained no valid users, so nobody was dequeued`, config['bot-alert-timeout']);
+                throw new CommandError(`!dq no valid users ${msg}`, `${msg.author}`);
             }
-            adminDQ = true;
-            user.id = mentionID;
 
         } else if (args.length !== 0) {
             replies.timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout']);
             throw new CommandError("!dq insufficient permissions", `${msg.author}`);
         }
 
-        // Find the user
-        for (let [course, list] of queues) {
-            for (let i = 0; i < list.length; i++) {
-                if (list[i].user === user.id) {
+        // Find the users
+        let dqString = "";
+        let dqAllIds = "";
+        let dqCourses = "";
+        let dqPrintString = "";
+        let dqSelf = false;
 
-                    // Take the user out of the queue
-                    list.splice(i, 1);
+        // DQ the user if they did not use any arguments
+        if (target.size == 0) {
+            target.set(`${msg.author.id}`, msg.author);
+            dqSelf = true;
+        }
 
-                    // Remove the queued role
-                    msg.guild.members.cache.get(user.id).roles.remove(config['role-q-code']);
+        let found = false
+        for ([id, member] of target) {
+            dqAllIds += ` <@${id}>`
 
-                    if (adminDQ) {
-                        logger.log(`!dq <@${user.id}> from ${course}`, `${msg.author}`)
-                        msg.react('✅')
-                        msg.reply(`we removed ${msg.guild.members.cache.get(user.id)} from the queue, don't forget to have them fill out the survey!\n<https://forms.gle/ZhiFS4AkzWxY1tzR7>`);
-                    } else {
-                        logger.log(`!dq self from ${course}`, `${msg.author}`)
-                        msg.react('✅')
-                        // msg.reply(`removed! You're no longer queued`);
+            for (let [course, list] of queues) {
+                for (let i = 0; i < list.length; i++) {
+                    if (list[i].user === id) {
+    
+                        // Take the user out of the queue
+                        list.splice(i, 1);
+    
+                        // Remove the queued role
+                        msg.guild.members.fetch(id).then(user => {
+                            user.roles.remove(config['role-q-code']);
+                        })
+
+                        found = true
+    
+                        if (dqSelf) {
+                            logger.log(`!dq self from ${course}`, `${msg.author}`)
+                            msg.react('✅')
+                            return true;
+                        } else {
+                            dqString += ` ${member}`;
+                            dqCourses += ` ${course}`;
+                            dqPrintString += `${member}\n`
+                        }
                     }
-
-                    save.saveQueue(queues);
-
-                    return true;
                 }
             }
         }
 
-        // User not found
-        if (adminDQ) {
-            replies.timedReply(msg, `${msg.guild.members.cache.get(user.id)} was not in a queue`, config['bot-alert-timeout'])
-            throw new CommandError(`!dq ${msg.guild.members.cache.get(user.id)} not in queue`, `${msg.author}`);
-            
-        } else {
+        save.saveQueue(queues);
+        if (dqSelf) {
             replies.timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
             throw new CommandError(`!dq self not in queue`, `${msg.author}`);
+        } else {
+            if (found) {
+                logger.log(`!dq${dqString} from${dqCourses}`, `${msg.author}`)
+                if (target.size > 1) {
+                    msg.channel.send(`> We removed the following from the queue\n${dqPrintString}`)
+                } else {
+                    msg.react('✅')
+                }
+            } else {
+                logger.log(`!dq nobody from${dqAllIds}`, `${msg.author}`)
+                if (target.size > 1) {
+                    replies.timedReply(msg, `none of${dqAllIds} were in a queue`, config['bot-alert-timeout']);
+                } else {
+                    replies.timedReply(msg, `${target.values().next().value} was not in a queue`, config['bot-alert-timeout']);
+                }
+            }
+
+            return true;
         }
     }
 }
