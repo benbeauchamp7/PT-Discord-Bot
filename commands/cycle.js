@@ -9,6 +9,10 @@ module.exports = {
     name: 'cycle',
     description: 'enables a student to join the corresponding cycling channel',
     async execute(message, args, options) {
+
+        replies.timedReply(message, "this function is disabled", config["bot-alert-timeout"]);
+        throw new CommandError("!cycle is disabled", `${message.author}`);
+
         let queues = options.queues;
         let memberList = message.mentions.users;
         let fromQueue = false;

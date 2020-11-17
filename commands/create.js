@@ -52,28 +52,29 @@ module.exports = {
                     }
 
                 }).then(voiceChan => {
-                    message.guild.channels.create('Cycling Room', {'type': 'voice'}).then(cycleChan => {
-                        cycleChan.setParent(category);
+                    // TODO: CYCLES
+                    // message.guild.channels.create('Cycling Room', {'type': 'voice'}).then(cycleChan => {
+                    //     cycleChan.setParent(category);
 
-                        // Remove all permissions from everyone
-                        cycleChan.updateOverwrite(cycleChan.guild.roles.everyone, {
-                            VIEW_CHANNEL: false,
-                            CONNECT: false,
-                            SPEAK: false
-                        });
+                    //     // Remove all permissions from everyone
+                    //     cycleChan.updateOverwrite(cycleChan.guild.roles.everyone, {
+                    //         VIEW_CHANNEL: false,
+                    //         CONNECT: false,
+                    //         SPEAK: false
+                    //     });
 
-                        // Set permissions for elevated members
-                        for (role of cycleChan.guild.roles.cache) {
-                            if (config['elevated-roles'].includes(role[1].name)) {
-                                cycleChan.updateOverwrite(role[1], {
-                                    VIEW_CHANNEL: true,
-                                    CONNECT: true,
-                                    SPEAK: true
-                                });
-                            }
-                        }
+                    //     // Set permissions for elevated members
+                    //     for (role of cycleChan.guild.roles.cache) {
+                    //         if (config['elevated-roles'].includes(role[1].name)) {
+                    //             cycleChan.updateOverwrite(role[1], {
+                    //                 VIEW_CHANNEL: true,
+                    //                 CONNECT: true,
+                    //                 SPEAK: true
+                    //             });
+                    //         }
+                    //     }
 
-                    });
+                    // });
                 });
             });
             

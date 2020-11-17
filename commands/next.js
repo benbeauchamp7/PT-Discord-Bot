@@ -8,6 +8,10 @@ module.exports = {
     name: 'next',
     description: 'cycles a student into the voice channel',
     async execute(message) {
+
+        replies.timedReply(message, "this function is disabled", config["bot-alert-timeout"]);
+        throw new CommandError("!cycle is disabled", `${message.author}`);
+
         if (!message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
             replies.timedReply(message, "you do not have permission to use this command.", config["bot-alert-timeout"]);
             throw new CommandError("!cycle insufficient perms", `${message.author}`);

@@ -46,6 +46,7 @@ module.exports = {
 
         // Find the users
         let dqString = "";
+        let dqAllIds = "";
         let dqCourses = "";
         let dqPrintString = "";
         let dqSelf = false;
@@ -56,7 +57,10 @@ module.exports = {
             dqSelf = true;
         }
 
+        let found = false
         for ([id, member] of target) {
+            dqAllIds += ` <@${id}>`
+
             for (let [course, list] of queues) {
                 for (let i = 0; i < list.length; i++) {
                     if (list[i].user === id) {
@@ -68,6 +72,8 @@ module.exports = {
                         msg.guild.members.fetch(id).then(user => {
                             user.roles.remove(config['role-q-code']);
                         })
+
+                        found = true
     
                         if (dqSelf) {
                             logger.log(`!dq self from ${course}`, `${msg.author}`)
@@ -88,12 +94,20 @@ module.exports = {
             replies.timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
             throw new CommandError(`!dq self not in queue`, `${msg.author}`);
         } else {
-
-            logger.log(`!dq${dqString} from${dqCourses}`, `${msg.author}`)
-            if (target.size > 1) {
-                msg.channel.send(`> We removed the following from the queue\n${dqPrintString}`)
+            if (found) {
+                logger.log(`!dq${dqString} from${dqCourses}`, `${msg.author}`)
+                if (target.size > 1) {
+                    msg.channel.send(`> We removed the following from the queue\n${dqPrintString}`)
+                } else {
+                    msg.react('✅')
+                }
             } else {
-                msg.react('✅')
+                logger.log(`!dq nobody from${dqAllIds}`, `${msg.author}`)
+                if (target.size > 1) {
+                    replies.timedReply(msg, `none of${dqAllIds} were in a queue`, config['bot-alert-timeout']);
+                } else {
+                    replies.timedReply(msg, `${target.values().next().value} was not in a queue`, config['bot-alert-timeout']);
+                }
             }
 
             return true;
