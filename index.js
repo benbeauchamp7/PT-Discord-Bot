@@ -321,7 +321,7 @@ bot.on('message', msg => {
 // Catch reactions for role assignment
 bot.on('messageReactionAdd', async (reaction, user) => {
     if (reaction === undefined) {
-        logger.log(`reaction undefined`, `<@${user}>`);
+        logger.log(`reaction undefined`, `${user}`);
         return;
     } else if (user.id === undefined) {
         logger.log(`user id undefined`, `<@${reaction}>`);

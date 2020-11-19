@@ -8,7 +8,7 @@ module.exports = {
         if (!message.member.roles.cache.find(r => r.name === "Bot Manager")) { return false; }
 
         const embed = new Discord.MessageEmbed()
-                .setColor('#0099ff')
+                .setColor('#500000')
                 .setTitle('Welcome to the online Fish Bowl!')
                 .addFields(
                     { name: 'Intros', value: 'This server is the online equivalent of Peer Teacher Central (PTC) located in HRBB 129, sometimes known as the "Fish Bowl".'},

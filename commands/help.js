@@ -6,7 +6,7 @@ module.exports = {
     description: 'basic ping command',
     async execute(message) {
         const commands = new Discord.MessageEmbed()
-                .setColor('#0099ff')
+                .setColor('#500000')
                 .setTitle('Commands you can use')
                 .addFields(
                     { name: "Getting Started", value: `1. Use /nick to set your name to your first and last
