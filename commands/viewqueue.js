@@ -1,9 +1,9 @@
-const logger = require('../logging.js');
-const CommandError = require('../commandError.js');
+const logger = require('../custom_modules/logging.js');
+const CommandError = require('../custom_modules/commandError.js');
 const fs = require("fs");
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const Discord = require('discord.js');
-const replies = require('../replies.js');
+const replies = require('../custom_modules/replies.js');
 
 function getPlace(rank) {
     switch (rank) {
@@ -33,7 +33,12 @@ async function displayCurrChan(msg, qList) {
 
     // Prepare display strings
     for (let i = 0; i < qList.length; i++) {
-        qNameStr += `${i + 1}. ${await msg.guild.members.fetch(qList[i].user)}\n`
+        if (qList[i].ready === true || qList[i].ready === undefined) {
+            qNameStr += `${i + 1}. ${await msg.guild.members.fetch(qList[i].user)}\n`
+        } else {
+            qNameStr += `~~${i + 1}. ${await msg.guild.members.fetch(qList[i].user)}~~\n`
+        }
+
         let d = new Date(qList[i].time);
         qTimeStr += parseTime(d) + '\n';
     }
@@ -178,13 +183,15 @@ function combineQueues(msg, args, queues) {
                 combined.push({
                     user: targetQueues[minIndex][0].user, 
                     course: 'Personal', 
-                    time: targetQueues[minIndex][0].time
+                    time: targetQueues[minIndex][0].time,
+                    ready: targetQueues[minIndex][0].ready
                 });
             } else {
                 combined.push({
                     user: targetQueues[minIndex][0].user, 
                     course: courses[minIndex], 
-                    time: targetQueues[minIndex][0].time
+                    time: targetQueues[minIndex][0].time,
+                    ready: targetQueues[minIndex][0].ready
                 });
             }
 
@@ -229,7 +236,12 @@ async function prepareEmbed(msg, courses, combined, distro) {
     let i = 0;
     for (i = 0; i < combined.length && i < config['queue-list-amount']; i++) {
         
-        qNameStr += `${i + 1}. ${await msg.guild.members.fetch(combined[i].user)}\n`
+        if (combined[i].ready === true || combined[i].ready === undefined) {
+            qNameStr += `${i + 1}. ${await msg.guild.members.fetch(combined[i].user)}\n`
+        } else {
+            qNameStr += `~~${i + 1}. ${await msg.guild.members.fetch(combined[i].user)}~~\n`
+        }
+
         qClassStr += `${combined[i].course}\n`;
 
         let d = new Date(combined[i].time);
@@ -242,7 +254,12 @@ async function prepareEmbed(msg, courses, combined, distro) {
         // Want to show the last position
         let last = combined[combined.length - 1];
 
-        qNameStr += `...\n${combined.length}. ${await msg.guild.members.fetch(last.user)}\n`
+        if (last.ready === true || last.ready === undefined) {
+            qNameStr += `...\n${combined.length}. ${await msg.guild.members.fetch(last.user)}\n`
+        } else {
+            qNameStr += `...\n~~${combined.length}. ${await msg.guild.members.fetch(last.user)}~~\n`
+        }
+
         qClassStr += `\n${last.course}\n`
         let d = new Date(last.time);
         qTimeStr += '\n' + parseTime(d) + '\n';
@@ -264,7 +281,7 @@ async function prepareEmbed(msg, courses, combined, distro) {
         logger.log(`!vq empty for ${courses}`, `${msg.author}`)
 
         return new Discord.MessageEmbed()
-            .setColor('#0099ff')
+            .setColor('#500000')
             .setTitle(`Queue order of ${courseStr}`)
             .addFields(
                 { name: 'Status', value: 'Queue is Empty!'}
@@ -275,12 +292,12 @@ async function prepareEmbed(msg, courses, combined, distro) {
         logger.log(`!vq for ${courses}`, `${msg.author}`)
 
         let ret = new Discord.MessageEmbed()
-            .setColor('#0099ff')
+            .setColor('#500000')
             .setTitle(`Queue order of ${courseStr}`)
             .addFields(
                 { name: 'Student', value: qNameStr, inline: true },
                 { name: 'Course‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎', value: qClassStr, inline: true },
-                { name: 'Queue Time', value: qTimeStr, inline: true }
+                { name: 'Queue Time', value: qTimeStr, inline: true },
             )
             .setFooter(footerString)
 
