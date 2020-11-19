@@ -1,5 +1,5 @@
-const logger = require('../logging.js');
-const save = require('../save.js');
+const logger = require('../custom_modules/logging.js');
+const save = require('../custom_modules/save.js');
 
 module.exports = {
     name: 'saveq',

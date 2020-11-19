@@ -1,9 +1,9 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const fs = require("fs");
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const replies = require('../replies.js');
-const save = require('../save.js');
-const CommandError = require('../commandError.js');
+const replies = require('../custom_modules/replies.js');
+const save = require('../custom_modules/save.js');
+const CommandError = require('../custom_modules/commandError.js');
 
 async function checkMention(mention, msg) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
@@ -17,21 +17,6 @@ async function checkMention(mention, msg) {
 
 function roleCheck(msg, roles) {
     return msg.member.roles.cache.find(r => roles.includes(r.name))
-}
-
-function getPlace(rank) {
-    switch (rank) {
-        case 1:  return "**first**";
-        case 2:  return "**second**";
-        case 3:  return "**third**";
-        case 4:  return "**fourth**";
-        case 5:  return "**fifth**";
-        case 6:  return "**sixth**";
-        case 7:  return "**seventh**";
-        case 8:  return "**eighth**";
-        case 9:  return "**nineth**";
-        default: return "number **" + rank + "**";
-    }
 }
 
 module.exports = {
@@ -105,10 +90,8 @@ module.exports = {
 
         // Get the list then add the new user to the back
         let course = qTarget;
-        if (!queues.has(qTarget)) {
-            queues.set(qTarget, []);
-        }
-        queues.get(course).push({user: user.id, time: Date.now()})
+        if (!queues.has(qTarget)) { queues.set(qTarget, []); }
+        queues.get(course).push({user: user.id, time: Date.now(), ready: true})
 
         // Give them the queued role
         msg.guild.members.fetch(user.id).then(user => {
