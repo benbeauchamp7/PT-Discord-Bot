@@ -4,14 +4,14 @@ const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
 module.exports = {
     // queue maps courses to {user, time} objects
-    saveQueue: function(queue) {
+	saveQueue: function(queue) {
 
         // Clear the file
         fs.writeFile(config['queue-file-path'], '', (error) => {
-            if (error) {
-                console.log(">> The file could not be opened <<");
-                console.log(error)
-            }
+			if (error) {
+				console.log(">> The file could not be opened <<");
+				console.log(error)
+			}
         });
         
         // Go through all courses
@@ -19,7 +19,10 @@ module.exports = {
             // Write to the file in the form 'course,user,time'
             for (let i = 0; i < objList.length; i++) {
 
-                fs.appendFile(config['queue-file-path'], `${course},${objList[i].user},${objList[i].time.toString()}\n`, (error) => {
+                let o = objList[i];
+                let rdyStr = o.ready || o.ready === undefined ? true : false
+
+                fs.appendFile(config['queue-file-path'], `${course},${o.user},${o.time.toString()},${rdyStr}\n`, (error) => {
                     if (error) {
                         console.log(">> The file could not be opened <<");
                     }
@@ -36,22 +39,24 @@ module.exports = {
             queue.set(course, []);
         }
 
+
         // Make sure the file exists
         if (fs.existsSync(config['queue-file-path'])) {
 
-            let lines = fs.readFileSync(config['queue-file-path'], 'utf-8').split('\n');
-            for (line of lines) {
-                if (line == "") {
-                    continue
-                }
+            const readInterface = readline.createInterface({
+                input: fs.createReadStream(config['queue-file-path']),
+                output: null,
+                console: false
+            });
 
-                var data = line.split(',');
+            readInterface.on('line', (line) => {
+                let data = line.split(',');
                 if (!queue.has(data[0])) {
                     queue.set(data[0], []);
                 }
-
-                queue.get(data[0]).push( {user: data[1], time: parseInt(data[2], 10)} );
-            }
+                console.log()
+                queue.get(data[0]).push( {user: data[1], time: parseInt(data[2], 10), ready: data[3] === 'true' ? true : false} );
+            });
         }
         return queue;
     }

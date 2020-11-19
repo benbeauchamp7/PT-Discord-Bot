@@ -7,10 +7,10 @@ const fs = require('fs');
 const token = fs.readFileSync("SecureKey", "utf-8");
 
 // Get audit logger
-const logger = require('./logging.js');
-const save = require('./save.js');
-const replies = require('./replies.js');
-const CommandError = require('./commandError.js');
+const logger = require('./custom_modules/logging.js');
+const save = require('./custom_modules/save.js');
+const replies = require('./custom_modules/replies.js');
+const CommandError = require('./custom_modules/commandError.js');
 
 // Banned word list sourced from http://www.bannedwordlist.com/lists/swearWords.txt
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));

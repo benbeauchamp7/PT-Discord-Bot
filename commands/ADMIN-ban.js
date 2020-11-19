@@ -1,8 +1,8 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const replies = require('../replies.js');
-const CommandError = require('../commandError.js');
+const replies = require('../custom_modules/replies.js');
+const CommandError = require('../custom_modules/commandError.js');
 
 async function getUserFromMention(msg, mention) {
     if (mention.match(/^<@!?(\d+)>$/g)) {

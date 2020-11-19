@@ -1,10 +1,10 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const Discord = require('discord.js');
 const fs = require("fs");
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const save = require("../save.js");
-const replies = require('../replies.js');
-const CommandError = require('../commandError.js');
+const save = require("../custom_modules/save.js");
+const replies = require('../custom_modules/replies.js');
+const CommandError = require('../custom_modules/commandError.js');
 
 module.exports = {
     name: 'clearqueue',
