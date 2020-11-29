@@ -6,7 +6,7 @@ module.exports = {
     description: 'basic ping command',
     async execute(message) {
         const commands = new Discord.MessageEmbed()
-                .setColor('#0099ff')
+                .setColor('#500000')
                 .setTitle('Commands you can use')
                 .addFields(
                     { name: "Queues", value: `\`!q @user\` & \`!enqueue @user\`

@@ -49,7 +49,7 @@ async function displayCurrChan(msg, qList) {
         logger.log(`!vq std (empty) for ${msg.channel.name.slice(5)}`, `${msg.author}`)
 
         return new Discord.MessageEmbed()
-            .setColor('#0099ff')
+            .setColor('#500000')
             .setTitle(`Queue order of ${msg.channel.name.slice(5)}`)
             .addFields(
                 { name: 'Status', value: 'Queue is Empty!'}
@@ -61,7 +61,7 @@ async function displayCurrChan(msg, qList) {
         logger.log(`!vq std for ${msg.channel.name.slice(5)} len ${qList.length}`, `${msg.author}`)
 
         return new Discord.MessageEmbed()
-            .setColor('#0099ff')
+            .setColor('#500000')
             .setTitle(`Queue order of ${msg.channel.name.slice(5)}`)
             .addFields(
                 { name: 'Student', value: qNameStr, inline: true },
