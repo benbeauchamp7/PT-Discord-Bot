@@ -4,7 +4,7 @@ const bot = new Discord.Client({ partials: ['REACTION']});
 
 // Unique token that allows the bot to login to discord
 const fs = require('fs');
-const token = fs.readFileSync("SecureKey", "utf-8");
+// const token = fs.readFileSync("SecureKey", "utf-8"); // For local running only
 
 // Get audit logger
 const logger = require('./custom_modules/logging.js');
@@ -367,4 +367,5 @@ bot.on('messageReactionRemove', async (reaction, user) => {
     }
 });
 
-bot.login(token);
+// bot.login(token); // For local (Don't forget to uncomment at top!)
+bot.login(process.env.BOT_TOKEN); // For cloud
