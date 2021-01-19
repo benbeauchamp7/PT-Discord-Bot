@@ -138,7 +138,7 @@ bot.on('ready', () => {
 });
 
 // Fires on uncached reaction events for course enrollment
-bot.on('raw', packet => {
+bot.on('raw', (packet) => {
     // Only fire on message reactions
     if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) { return; }
     
@@ -157,11 +157,13 @@ bot.on('raw', packet => {
             const reaction = message.reactions.cache.get(`${emoji}`);
 
             // Emit the packet so the reaction event handler can grab it
-            if (packet.t === 'MESSAGE_REACTION_ADD') {
-                bot.emit('messageReactionAdd', reaction, bot.users.cache.get(packet.d.user_id));
-            } else if (packet.t === 'REMOVE') {
-                bot.emit('messageReactionAdd', reaction, bot.users.cache.get(packet.d.user_id));
-            }
+            bot.users.fetch(packet.d.user_id).then(user => {
+                if (packet.t === 'MESSAGE_REACTION_ADD') {
+                    bot.emit('messageReactionAdd', reaction, user);
+                } else if (packet.t === 'REMOVE') {
+                    bot.emit('messageReactionAdd', reaction, user);
+                }
+            });
         });
     }); 
 });
@@ -323,8 +325,8 @@ bot.on('messageReactionAdd', async (reaction, user) => {
     if (reaction === undefined) {
         logger.log(`reaction undefined`, `${user}`);
         return;
-    } else if (user.id === undefined) {
-        logger.log(`user id undefined`, `<@${reaction}>`);
+    } else if (user === undefined) {
+        logger.log(`user undefined`, `<@${reaction[1]}>`);
         return;
     }
 
@@ -343,6 +345,13 @@ bot.on('messageReactionAdd', async (reaction, user) => {
 });
 
 bot.on('messageReactionRemove', async (reaction, user) => {
+    if (reaction === undefined) {
+        logger.log(`reaction undefined`, `${user}`);
+        return;
+    } else if (user === undefined) {
+        logger.log(`user undefined`, `<@${reaction[1]}>`);
+        return;
+    }
 
     // Fetch the reaction if needed
     if (reaction.partial) {

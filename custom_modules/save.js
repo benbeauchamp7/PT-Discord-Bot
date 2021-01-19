@@ -54,7 +54,7 @@ module.exports = {
                 if (!queue.has(data[0])) {
                     queue.set(data[0], []);
                 }
-                console.log()
+
                 queue.get(data[0]).push( {user: data[1], time: parseInt(data[2], 10), ready: data[3] === 'true' || data[3] === undefined ? true : false} );
             });
         }
