@@ -8,10 +8,10 @@ module.exports = {
         if (!message.member.roles.cache.find(r => r.name === "Bot Manager")) { return false; }
 
         const embed = new Discord.MessageEmbed()
-                .setColor('#0099ff')
+                .setColor('#500000')
                 .setTitle('Welcome to the online Fish Bowl!')
                 .addFields(
-                    { name: 'Intros', value: 'This server is the online equivilent of Peer Teacher Central (PTC) located in HRBB 129, sometimes known as the "Fish Bowl".'},
+                    { name: 'Intros', value: 'This server is the online equivalent of Peer Teacher Central (PTC) located in HRBB 129, sometimes known as the "Fish Bowl".'},
                     { name: 'Enroll in your courses', value: 'To get started, visit the "course enrollment" channel to pick the course you are in. These will unlock general channels for you to chat in with other students or Peer Teachers.'},
                     { name: 'Creating rooms', value: `If you find yourself wanting to have a more focused discussion, you can create your own text/voice room set by clicking on "Click to create a new room" or by using the \`!create <topic>\` command in the "create-room" text channel. When you're done with the room, use \`!end\` to clean everything up. The text channel will be archived for a few days so that you can go back and check on any converstaions you had (be sure to save what you want to keep!). The rooms will also timeout if the text channel has been inactive and the voice channel is empty.`},
                     { name: 'Use your real name', value: "Second, be sure to use your *real name* (first and last) on the server! You can do this by using \`/nick <your name>\` in any channel you can type in."},

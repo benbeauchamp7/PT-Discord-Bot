@@ -1,7 +1,8 @@
 const Discord = require("discord.js");
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const CommandError = require('../custom_modules/commandError.js');
 
 function clearChat(message) {
     // Creates a copy of the channel, then deletes the original
@@ -27,7 +28,7 @@ function clearArchives(bot, message) {
 function clearStudentRooms(bot) {
     for (const chan of bot.channels.cache) {
         // If student category
-        if (chan[1] instanceof Discord.CategoryChannel && chan[1].name.endsWith(config['student-chan-specifier'])) {
+        if (chan[1] instanceof Discord.CategoryChannel && (chan[1].name.endsWith(config['student-chan-specifier'] || chan[1].name.endsWith(config['sticky-chan-specifier'])))) {
             for (const child of chan[1].children) {
                 child[1].delete()
             }
@@ -43,6 +44,8 @@ module.exports = {
     name: 'clear',
     description: 'clears a text channel',
     async execute(message, args, options) {
+        return false;
+        
         const promptMap = new Map();
         promptMap.set('chat', "This will erase all content in this channel")
         promptMap.set('archives', "This will erase all archived content in the \"Archived Student Rooms\" category")
@@ -124,7 +127,7 @@ module.exports = {
 
             return true;
         } else {
-            message.reply("insufficent permissions.").then(reply => {
+            message.reply("insufficient permissions.").then(reply => {
                 reply.delete({"timeout": config['bot-alert-timeout']});
                 message.delete({"timeout": config['bot-alert-timeout']});
             });

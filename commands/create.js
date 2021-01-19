@@ -1,6 +1,7 @@
 const fs = require('fs');
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const CommandError = require('../custom_modules/commandError.js');
 
 module.exports = {
     name: 'create',
@@ -10,27 +11,9 @@ module.exports = {
         const isAuto = options.auto;
         const cooldown = options.cooldown;
         const timeout = config['bot-alert-timeout'];
-        const bannedTitleWords = config['banned-title-words']
         const chan = message.channel;
 
-        var badWordFound = false;
         if (chan.name == 'create-room' || chan.name == 'bot-channel') {
-
-            // Make sure the title doesn't contain bad language
-            for (const badWord of bannedTitleWords) {
-                for (const userWord  of args) {
-                    if (badWord == userWord.toLowerCase()) {
-                        message.reply(`You cannot create a channel with ${badWord} in the name`).then(reply => {
-                            reply.delete({'timeout': timeout});
-                            message.delete({'timeout': timeout});
-                        });
-                        logger.log("bad word in title creation", `${message.author}`);
-                        badWordFound = true;
-                    }
-                }
-            }
-
-            if (badWordFound === true) { return false; }
 
             // Don't let user create a channel if they are on cooldown
             if (cooldown.has(user.id)) {
@@ -41,7 +24,7 @@ module.exports = {
                     message.delete({'timeout': timeout});
                 });
 
-                return false;
+                throw new CommandError("!create on cooldown", `${message.author}`);
             }
 
             // Create a category for the student picked topic
@@ -61,14 +44,38 @@ module.exports = {
                     }
                 });
 
-                // Create voice channel
-                message.guild.channels.create('Voice', {'type': 'voice'}).then(newVoiceChan => {
-                    newVoiceChan.setParent(category);
+                // Create voice channels
+                message.guild.channels.create('Voice', {'type': 'voice'}).then(voiceChan => {
+                    voiceChan.setParent(category);
                     if (isAuto) {
-                        user.voice.setChannel(newVoiceChan.id);
+                        user.voice.setChannel(voiceChan.id);
                     }
-                });
 
+                }).then(voiceChan => {
+                    // TODO: CYCLES
+                    // message.guild.channels.create('Cycling Room', {'type': 'voice'}).then(cycleChan => {
+                    //     cycleChan.setParent(category);
+
+                    //     // Remove all permissions from everyone
+                    //     cycleChan.updateOverwrite(cycleChan.guild.roles.everyone, {
+                    //         VIEW_CHANNEL: false,
+                    //         CONNECT: false,
+                    //         SPEAK: false
+                    //     });
+
+                    //     // Set permissions for elevated members
+                    //     for (role of cycleChan.guild.roles.cache) {
+                    //         if (config['elevated-roles'].includes(role[1].name)) {
+                    //             cycleChan.updateOverwrite(role[1], {
+                    //                 VIEW_CHANNEL: true,
+                    //                 CONNECT: true,
+                    //                 SPEAK: true
+                    //             });
+                    //         }
+                    //     }
+
+                    // });
+                });
             });
             
             logger.log("Channel Created (txt)", `${message.author}`)
@@ -80,8 +87,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
-            logger.log("!create wrong room", `${message.author}`);
-            return false;
+            throw new CommandError("!create wrong room", `${message.author}`);
         }
     }
 }

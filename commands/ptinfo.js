@@ -1,4 +1,4 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const Discord = require("discord.js");
 
 module.exports = {
@@ -8,7 +8,7 @@ module.exports = {
 		if (!message.member.roles.cache.find(r => r.name === "Bot Manager")) { return false; }
 		
 		const welcome = new Discord.MessageEmbed()
-                .setColor('#0099ff')
+                .setColor('#500000')
                 .setTitle('Things to get started')
                 .addFields(
 					{ name: "Getting started", value: `Before starting, be sure you do a few things
@@ -25,7 +25,7 @@ module.exports = {
 				)
 		
 		const commands = new Discord.MessageEmbed()
-                .setColor('#0099ff')
+                .setColor('#500000')
                 .setTitle('Commands you can use')
                 .addFields(
 					{ name: "Queues", value: `\`!q\` & \`!enqueue\`

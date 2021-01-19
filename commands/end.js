@@ -1,6 +1,7 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+const CommandError = require('../custom_modules/commandError.js');
 
 module.exports = {
     name: 'end',
@@ -32,15 +33,24 @@ module.exports = {
         const timeout = config['bot-alert-timeout'];
         const chan = message.channel;
         const parentID = chan.parent.id;
-        if (chan.parent.name.endsWith(config['student-chan-specifier'])) {
+        if (chan.parent.name.endsWith(config['student-chan-specifier']) || chan.parent.name.endsWith(config['sticky-chan-specifier'])) {
             let movePromise = undefined;
+
+            if (chan.name.endsWith(config['sticky-chan-specifier']) && !msg.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
+                
+                message.reply(`you do not have permission to end a PT room`).then(reply => {
+                    reply.delete({'timeout': timeout});
+                    message.delete({'timeout': timeout});
+                });
+
+                throw new CommandError("PT !end failed (insufficient perms)", `${message.author}`);
+            }
 
             // Remove all servers in the same category (archive text channel if applicable)
             for (const deleteChan of chan.parent.children) {
                 if (args.includes('now') || chan.name === "unnamed" || !(deleteChan[1].type === "text" && config['do-archive-deletions'])) {
                     deleteChan[1].delete();
                 } else {
-                    console.log(args)
                     deleteChan[1].send(`***This channel is an archive of a previous student chat room. It will remain here for ${config['archive-timeout'] / 1000 / 60 / 60} hours after its archive date before being deleted forever. Be sure to save anything you need!***`);
                 
                     movePromise = deleteChan[1].setParent(config['archive-cat-id']).then(movedChan => {
@@ -73,8 +83,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
-            logger.log("!end wrong room", `${message.author}`)
-            return false;
+            throw new CommandError("!end wrong room", `${message.author}`);
         }
     }
 }
