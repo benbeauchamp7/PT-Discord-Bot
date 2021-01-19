@@ -10,7 +10,6 @@
   "author": "Benjamin Beauchamp",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^12.2.0",
-    "request": "2.81.0"
+    "discord.js": "^12.2.0"
   }
 }
