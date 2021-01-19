@@ -110,7 +110,8 @@ function isOnCooldown(userID) {
     return cooldownUsers.has(userID);
 }
 
-bot.on('ready', () => {
+bot.on('ready', async () => {
+
     // Ping console when bot is ready
     console.log('Bot Ready!');
     logger.log("Bot Ready", "none");
@@ -133,7 +134,9 @@ bot.on('ready', () => {
         queues.set(course, []);
     }
 
-    queues = save.loadQueue();
+    queues = await save.loadQueue();
+    console.log('Queue Ready!');
+    logger.log("Queue Ready", "none");
 
 });
 

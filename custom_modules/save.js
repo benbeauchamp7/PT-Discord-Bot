@@ -17,7 +17,7 @@ module.exports = {
 	saveQueue: function(queue) {
 
         // Clear the file
-        fs.writeFile(config['queue-file-path'], '', (error) => {
+        fs.writeFileSync(config['queue-file-path'], '', (error) => {
 			if (error) {
 				console.log(">> The file could not be opened <<");
 				console.log(error)
@@ -32,7 +32,7 @@ module.exports = {
                 let o = objList[i];
                 let rdyStr = o.ready || o.ready === undefined ? true : false
 
-                fs.appendFile(config['queue-file-path'], `${course},${o.user},${o.time.toString()},${rdyStr}\n`, (error) => {
+                fs.appendFileSync(config['queue-file-path'], `${course},${o.user},${o.time.toString()},${rdyStr}\n`, (error) => {
                     if (error) {
                         console.log(">> The file could not be opened <<");
                     }
@@ -54,9 +54,10 @@ module.exports = {
                 console.log(err)
             };
         });
+
     },
 
-    loadQueue: function() {
+    loadQueue: async function() {
 
         // Instantiate queue with lists
         let queue = new Map();
@@ -70,18 +71,9 @@ module.exports = {
             Key: config['queue-file-path'],
         };
 
-        s3.getObject(params, function(err, data) {
-            if (err) {
-                console.log(">> The file could not loaded from S3 <<");
-                console.log(err)
-            };
+        const promise = s3.getObject(params).promise().then(data => {
 
-            fs.writeFileSync(config['queue-file-path'], config['queue-file-path']);
-        })
-
-
-        // Make sure the file exists
-        if (fs.existsSync(config['queue-file-path'])) {
+            fs.writeFileSync(config['queue-file-path'], data.Body);
 
             const readInterface = readline.createInterface({
                 input: fs.createReadStream(config['queue-file-path']),
@@ -97,8 +89,14 @@ module.exports = {
 
                 queue.get(data[0]).push( {user: data[1], time: parseInt(data[2], 10), ready: data[3] === 'true' || data[3] === undefined ? true : false} );
             });
-        }
 
-        return queue;
+            return queue;
+
+        }).catch((err) => {
+            console.log(">> The file could not loaded from S3 <<");
+            console.log(err)
+        });
+
+        return await promise;
     }
 }
