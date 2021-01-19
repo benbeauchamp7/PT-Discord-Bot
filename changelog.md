@@ -1,2 +1,4 @@
 PLANNED: `!q` reasons
-PLANNED: Dynamic queues by pinning embeds
+
+Moved custom modules to a dedicated folder
+Added `!q` status commands `!r` for ready, and `!nr` for not ready.

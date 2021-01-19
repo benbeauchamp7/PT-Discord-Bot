@@ -42,7 +42,7 @@ module.exports = {
         for (name of emoteNames) {
             label += name + "   ";
         }
-        message.channel.send(`Select your coursees by clicking on the buttons below\n**\`${label}\`**`).then(async enrollMsg => {
+        message.channel.send(`Select your courses by clicking on the buttons below\n**\`${label}\`**`).then(async enrollMsg => {
 
             emotes.sort((a, b) => {
                 if (a.name < b.name) { return -1; }
