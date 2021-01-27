@@ -1,3 +1,4 @@
+// Commonly used responses for easy access
 module.exports = {
     timedReply: function(message, response, time) {
         message.reply(response).then(reply => {

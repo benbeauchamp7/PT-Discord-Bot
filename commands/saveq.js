@@ -1,6 +1,6 @@
-const logger = require('../custom_modules/logging.js');
 const save = require('../custom_modules/save.js');
 
+// Manually writes the queues to file (this is done automatically most of the time)
 module.exports = {
     name: 'saveq',
     description: 'saves the queues',

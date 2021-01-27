@@ -8,7 +8,7 @@ const CommandError = require('../custom_modules/commandError.js');
 
 module.exports = {
     name: 'clearqueue',
-    description: 'basic ping command',
+    description: 'empties all the queues',
     async execute(message, args, options) {
         let queues = options.queues;
 
@@ -24,7 +24,7 @@ module.exports = {
                 collector.on('collect', reply => {
                     if (reply.content.toLowerCase() == config["prefix"] + "confirm") {
     
-                        // Reinitialize
+                        // Reinitialize queues to be empty
                         for (course of config['course-channels']) {
                             queues.set(course, []);
                         }
@@ -45,7 +45,7 @@ module.exports = {
                             }
                             logger.log(`!clearq called`, `${message.author}`);
 
-                            // Remove queued role from everyone
+                            // Remove queued role from everyone (issue with cached users)
                             let queuedMembers = message.guild.roles.cache.get(config['role-q-code']).members;
                             for ([id, member] of queuedMembers) {
                                 member.roles.remove(config['role-q-code'])

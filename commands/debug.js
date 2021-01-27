@@ -1,3 +1,4 @@
+// Just a general command you can configure to print out data into the discord channel
 module.exports = {
     name: 'debug',
     description: 'debug command',

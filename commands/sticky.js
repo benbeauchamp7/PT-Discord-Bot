@@ -3,6 +3,7 @@ const logger = require('../custom_modules/logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const CommandError = require('../custom_modules/commandError.js');
 
+// Just a room with creation permissions and a separate configuration for inactivity
 module.exports = {
     name: 'sticky',
     description: 'Makes a set of discussion channels',

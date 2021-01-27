@@ -71,6 +71,7 @@ module.exports = {
             Key: config['queue-file-path'],
         };
 
+        // Read the file
         const promise = s3.getObject(params).promise().then(data => {
 
             fs.writeFileSync(config['queue-file-path'], data.Body);
@@ -87,6 +88,7 @@ module.exports = {
                     queue.set(data[0], []);
                 }
 
+                // Populate the queue with the student
                 queue.get(data[0]).push( {user: data[1], time: parseInt(data[2], 10), ready: data[3] === 'true' || data[3] === undefined ? true : false} );
             });
 
