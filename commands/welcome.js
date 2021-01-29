@@ -5,7 +5,7 @@ module.exports = {
     description: 'Welcome message',
     async execute(message) {
 
-        if (!message.member.roles.cache.find(r => r.name === "Bot Manager")) { return false; }
+        if (!message.member.roles.cache.find(r => r.name === "Moderator")) { return false; }
 
         // THIS IS THE ORIGINAL MESSAGE
 //         const embed = new Discord.MessageEmbed()
