@@ -34,9 +34,23 @@ module.exports = {
                 // Move cat above archive
                 category.setPosition(-1, {"relative": true});
 
+                // Remove view permissions from everyone
+                category.updateOverwrite(voiceChan.guild.roles.everyone, {
+                    VIEW_CHANNEL: false
+                });
+
+                // Set view for "welcome role"
+                category.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
+                    VIEW_CHANNEL: true,
+                    CONNECT: true,
+                    SPEAK: true
+                });
+
                 // Create text channel
                 message.guild.channels.create(args.join('-')).then(newTextChan => {
-                    newTextChan.setParent(category);
+                    newTextChan.setParent(category).then(() => {
+                        newTextChan.lockPermissions();
+                    });
                     newTextChan.send(config["new-chatroom-msg"])
 
                     if (isAuto === undefined) {
@@ -46,7 +60,9 @@ module.exports = {
 
                 // Create voice channels
                 message.guild.channels.create('Voice', {'type': 'voice'}).then(voiceChan => {
-                    voiceChan.setParent(category);
+                    voiceChan.setParent(category).then(() => {
+                        voiceChan.lockPermissions();
+                    });
                     if (isAuto) {
                         user.voice.setChannel(voiceChan.id);
                     }
