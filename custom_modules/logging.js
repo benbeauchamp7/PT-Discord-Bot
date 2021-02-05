@@ -1,4 +1,6 @@
 const fs = require('fs');
+const dotenv = require('dotenv');
+dotenv.config();
 
 // Formatting function (adds placeholder zero for logging)
 function ph(num) {

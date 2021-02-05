@@ -48,9 +48,20 @@ module.exports = {
 
                 // Create text channel
                 message.guild.channels.create(args.join('-')).then(newTextChan => {
-                    newTextChan.setParent(category).then(() => {
-                        newTextChan.lockPermissions();
+                    newTextChan.setParent(category);
+
+                     // Remove view permissions from everyone
+                    newTextChan.updateOverwrite(message.guild.roles.everyone, {
+                        VIEW_CHANNEL: false
                     });
+
+                    // Set view for "welcome role"
+                    newTextChan.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
+                        VIEW_CHANNEL: true,
+                        CONNECT: true,
+                        SPEAK: true
+                    });
+
                     newTextChan.send(config["new-chatroom-msg"])
 
                     if (isAuto === undefined) {
@@ -60,10 +71,20 @@ module.exports = {
 
                 // Create voice channels
                 message.guild.channels.create('Voice', {'type': 'voice'}).then(voiceChan => {
-                    voiceChan.setParent(category).then(() => {
-                        voiceChan.lockPermissions();
-                        console.log("Locking voice")
+                    voiceChan.setParent(category);
+
+                    // Remove view permissions from everyone
+                    voiceChan.updateOverwrite(message.guild.roles.everyone, {
+                        VIEW_CHANNEL: false
                     });
+
+                    // Set view for "welcome role"
+                    voiceChan.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
+                        VIEW_CHANNEL: true,
+                        CONNECT: true,
+                        SPEAK: true
+                    });
+
                     if (isAuto) {
                         user.voice.setChannel(voiceChan.id);
                     }

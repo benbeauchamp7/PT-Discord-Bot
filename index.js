@@ -2,6 +2,9 @@
 const Discord = require('discord.js');
 const bot = new Discord.Client({ partials: ['REACTION']});
 
+const dotenv = require('dotenv');
+dotenv.config();
+
 // Unique token that allows the bot to login to discord
 const fs = require('fs');
 // const token = fs.readFileSync("SecureKey", "utf-8"); // For local running only
