@@ -62,6 +62,7 @@ module.exports = {
                 message.guild.channels.create('Voice', {'type': 'voice'}).then(voiceChan => {
                     voiceChan.setParent(category).then(() => {
                         voiceChan.lockPermissions();
+                        console.log("Locking voice")
                     });
                     if (isAuto) {
                         user.voice.setChannel(voiceChan.id);
