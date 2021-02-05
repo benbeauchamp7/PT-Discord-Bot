@@ -49,7 +49,7 @@ module.exports = {
                 category.setPosition(-1, {"relative": true});
 
                 // Remove view permissions from everyone
-                category.updateOverwrite(voiceChan.guild.roles.everyone, {
+                category.updateOverwrite(message.guild.roles.everyone, {
                     VIEW_CHANNEL: false
                 });
 
