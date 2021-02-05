@@ -25,6 +25,7 @@ function parseTime(time) {
 
     let amPm = (time.getHours() >= 12 ? 'PM' : 'AM');
     let hrs = (time.getHours() > 12 ? time.getHours() - 12 : time.getHours());
+    hrs = (hrs == 0 ? 12 : hrs); // Makes midnight 12am instead of 0am
     let mins = (time.getMinutes() > 9 ? time.getMinutes() : `0${time.getMinutes()}`)
     return `${hrs}:${mins} ${amPm}`;
 }

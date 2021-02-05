@@ -24,6 +24,11 @@ module.exports = {
 		return `${ph(now.getMonth() + 1)}-${ph(now.getDate())}-${ph(now.getFullYear())}.log`
 	},
 
+	// Creates a filename based on a variable date
+	getVariableFilename: function(date) {
+		return `${ph(date.getMonth() + 1)}-${ph(date.getDate())}-${ph(date.getFullYear())}.log`
+	},
+
 	// Creates an Error filename based on the date and time
 	getErrFilename: function() {
 		const now = new Date();

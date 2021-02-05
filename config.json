@@ -1,5 +1,5 @@
 {
-    "prefix": "!",
+    "prefix": "?",
     "do-moderate-chat": true,
     "do-archive-deletions": true,
 
@@ -59,7 +59,7 @@
 
     "role-q-code": "753784888603181157",
 
-    "new-chatroom-msg": "You can use !topic to rename this channel if your discussion changes topics. When done, use !end to close the chat room.",
+    "new-chatroom-msg": "You can use `!topic` to rename this channel if your discussion changes topics. When done, use `!end` to close the chat room.",
 
     "course-channels": ["csce-110", "csce-111", "csce-121", "csce-206", "csce-221", "csce-222", "csce-312", "csce-313", "csce-313hnr", "csce-314", "csce-315"],
     "emote-names": ["110", "111", "121", "206", "221", "222", "312", "313", "313hnr", "314", "315"],
@@ -74,7 +74,6 @@
         "arse",
         "ass",
         "ballsack",
-        "balls",
         "bastard",
         "bitch",
         "biatch",
@@ -153,7 +152,6 @@
         "arse",
         "ass",
         "ballsack",
-        "balls",
         "bastard",
         "bitch",
         "biatch",

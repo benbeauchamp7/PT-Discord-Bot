@@ -2,12 +2,15 @@
 const Discord = require('discord.js');
 const bot = new Discord.Client({ partials: ['REACTION']});
 
+const fs = require('fs');
+
+// For .env variables
 const dotenv = require('dotenv');
 dotenv.config();
 
-// Unique token that allows the bot to login to discord
-const fs = require('fs');
-// const token = fs.readFileSync("SecureKey", "utf-8"); // For local running only
+// Scheduler to reboot the bot every night for a new Heroku dyno and to save files to s3
+// import schedule from 'node-schedule'
+const schedule = require('node-schedule')
 
 // Get audit logger
 const logger = require('./custom_modules/logging.js');
@@ -145,6 +148,9 @@ bot.on('ready', async () => {
     for (course of config['course-channels']) {
         queues.set(course, []);
     }
+
+    // Grab log file from s3 (if we had made one before)
+    save.loadLog();
 
     // Loads queues from a saved file
     queues = await save.loadQueue();
@@ -404,5 +410,45 @@ bot.on('messageReactionRemove', async (reaction, user) => {
     }
 });
 
-// bot.login(token); // For local (Don't forget to uncomment at top!)
+// Create shutdown signal every 24 hours so that the bot reboots at night
+// Currently resets at hour 2
+schedule.scheduleJob('0 2 * * *', function() {
+    // Use SIGTERM here because that is heroku's shutdown warning signal
+    process.emit('SIGTERM');
+});
+
+process.on("SIGINT", () => {
+    logger.log("SIGINT sent, sending SIGTERM for shutdown", "#system");
+    process.emit('SIGTERM');
+})
+
+// Catch shutdown signal to close gracefully
+process.on('SIGTERM', async () => {
+    logger.log("SIGTERM sent, shutdown requested", "#system");
+
+    let promises = [];
+
+    // Save logs to s3
+    promises.push(await save.saveLogs());
+
+    // Un-nest promises
+    promises = promises.flat();
+    
+    // Save queues to s3
+    promises.push(save.uploadQueue());
+
+    console.log(promises);
+    
+    // Wait for all uploads to be done before exiting
+    for (let i = 0; i < promises.length; i++) {
+        await promises[i];
+    }
+    
+    logger.log("Cleanup complete, exiting.", "#system");
+
+    // Exit
+    process.exit(0);
+
+});
+
 bot.login(process.env.BOT_TOKEN); // For cloud
