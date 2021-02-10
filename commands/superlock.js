@@ -20,33 +20,43 @@ module.exports = {
                 let voiceChan = message.member.voice.channel;
                 if (voiceChan !== null && voiceChan.parent === parent) {
                     voiceChan.lockPermissions().then(voiceChan => {
-
                         let perms = [];
-                        // Deny everyone of connecting perms
+
+                        // Deny everyone of view
+                        perms.push(
+                            {
+                                id: message.guild.roles.everyone,
+                                deny: ['VIEW_CHANNEL']
+                            }
+                        )
+
+                        // Deny # welcome of connecting perms
                         perms.push(
                             {
                                 id: message.guild.roles.cache.get(config['role-welcome-code']),
-                                deny: ['CONNECT']
+                                deny: ['CONNECT'],
+                                allow: ['VIEW_CHANNEL']
                             }
                         )
+                        
                         
                         // Set permissions for all the occupant members
                         for (fella of voiceChan.members) {
                             perms.push(
                                 {
                                     id: fella[1],
-                                    allow: ['CONNECT']
+                                    allow: ['CONNECT', 'VIEW_CHANNEL']
                                 }
                             )
                         }
 
                         // Set permissions for elevated members
                         for (role of voiceChan.guild.roles.cache) {
-                            if (role[1].name === "Moderator") {
+                            if (config['admin-roles'].includes(role[1].name)) {
                                 perms.push(
                                     {
-                                        id: fella[1],
-                                        allow: ['CONNECT']
+                                        id: role[1],
+                                        allow: ['CONNECT', 'VIEW_CHANNEL']
                                     }
                                 )
                             }
