@@ -20,6 +20,7 @@ module.exports = {
 
             logger.log("!offline", `${message.author}`);
 
+            // Reset the !offline user's personal queue
             if (queues.has(`<@${message.author.id}>`)) {
                 queues.set(`<@${message.author.id}>`, []);
                 save.saveQueue(queues);

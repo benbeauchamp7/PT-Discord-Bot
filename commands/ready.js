@@ -57,11 +57,13 @@ module.exports = {
                         found = true
     
                         if (readySelf) {
+                            // Only reading the one person, so we can end the function
                             logger.log(`!ready self`, `${msg.author}`)
 							msg.react('✅')
 							save.saveQueue(queues);
                             return true;
                         } else {
+                            // If multiple, record the information of the successful ready
                             readyString += ` ${member}`;
                             readyPrintString += `${member}\n`
                         }

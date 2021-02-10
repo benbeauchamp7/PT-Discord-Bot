@@ -15,14 +15,17 @@ function getPlace(rank) {
         case 6:  return "**sixth**";
         case 7:  return "**seventh**";
         case 8:  return "**eighth**";
-        case 9:  return "**nineth**";
+        case 9:  return "**ninth**";
         default: return "number **" + rank + "**";
     }
 }
 
 function parseTime(time) {
+    // Takes a time object and formats it nicely for output
+
     let amPm = (time.getHours() >= 12 ? 'PM' : 'AM');
     let hrs = (time.getHours() > 12 ? time.getHours() - 12 : time.getHours());
+    hrs = (hrs == 0 ? 12 : hrs); // Makes midnight 12am instead of 0am
     let mins = (time.getMinutes() > 9 ? time.getMinutes() : `0${time.getMinutes()}`)
     return `${hrs}:${mins} ${amPm}`;
 }
@@ -129,6 +132,7 @@ function getPlaceInLine(msg, queues, user) {
 }
 
 function combineQueues(msg, args, queues) {
+    // Combines specified queues together such that they are all sorted by time regardless of class
     let courses = [];
     let targetQueues = [];
 
@@ -163,6 +167,7 @@ function combineQueues(msg, args, queues) {
         let minIndex = null;
         nonemptyQueues = targetQueues.length;
 
+        // Of the start of the current queues, select the user with the earliest time
         for (let c = 0; c < courses.length; c++) {
 
             // Skip courses with empty queues
@@ -171,13 +176,14 @@ function combineQueues(msg, args, queues) {
                 continue;
             }
 
-            // If we haven't selected a min, or if this one is the new min
+            // If we haven't selected a min, or if this one is the new min, update the min
             if (min === null || targetQueues[c][0].time < min) {
                 min = targetQueues[c][0].time;
                 minIndex = c;
             }
         }
 
+        // If we found a valid user, add them to the combined queue
         if (minIndex != null) {
             if (courses[minIndex].startsWith('<@')) {
                 combined.push({
@@ -204,7 +210,7 @@ function combineQueues(msg, args, queues) {
 }
 
 async function prepareEmbed(msg, courses, combined, distro) {
-    // Replace personal queue alieses
+    // Replace personal queue aliases
     for (let i = 0; i < courses.length; i++) {
         if (courses[i].startsWith('<@')  || config["personal-q-aliases"].includes(courses[i])) {
             courses[i] = "personal queue"
@@ -221,6 +227,7 @@ async function prepareEmbed(msg, courses, combined, distro) {
         }
     }
 
+    // Slap an 'and' for the last course because we care enough about english to spare 6 lines of code
     if (courses.length > 1) {
         if (courses[courses.length - 1].startsWith('<@')  || config["personal-q-aliases"].includes(courses[courses.length - 1])) {
             courseStr += ' and ' + 'personal queue';
@@ -265,8 +272,8 @@ async function prepareEmbed(msg, courses, combined, distro) {
         qTimeStr += '\n' + parseTime(d) + '\n';
     }
 
-    let distroStr = "";
     // Format queue distributions
+    let distroStr = "";
     for (let [course, amount] of distro) {
         if (amount === 0) { continue; }
         distroStr += `\`${course}: ${amount}\`\n`
@@ -313,6 +320,7 @@ async function prepareEmbed(msg, courses, combined, distro) {
 }
 
 function getDistro(courses, queues) {
+    // Gets the number of students from each class in the queue
     let distro = new Map();
     for (course of courses) {
         let q = queues.get("csce-" + course);

@@ -19,8 +19,9 @@ module.exports = {
                 // While in a matching voice channel
                 let voiceChan = message.member.voice.channel;
                 if (voiceChan !== null && voiceChan.parent === parent && voiceChan.name === "Voice") {
-                    // Remove all permissions from everyone
-                    voiceChan.updateOverwrite(voiceChan.guild.roles.everyone, {
+                    
+                    // Remove permissions from welcome role
+                    voiceChan.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
                         VIEW_CHANNEL: true,
                         CONNECT: false,
                         SPEAK: true

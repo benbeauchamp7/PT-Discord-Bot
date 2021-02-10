@@ -3,6 +3,7 @@ const logger = require('../custom_modules/logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const CommandError = require('../custom_modules/commandError.js');
 
+// Just a room with creation permissions and a separate configuration for inactivity
 module.exports = {
     name: 'sticky',
     description: 'Makes a set of discussion channels',
@@ -47,17 +48,34 @@ module.exports = {
                 // Move cat above archive
                 category.setPosition(-1, {"relative": true});
 
+                // Remove view permissions from everyone
+                category.updateOverwrite(message.guild.roles.everyone, {
+                    VIEW_CHANNEL: false
+                });
+
+                // Set view for "welcome role"
+                category.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
+                    VIEW_CHANNEL: true,
+                    CONNECT: true,
+                    SPEAK: true
+                });
+
                 // Create text channel
                 message.guild.channels.create(args.join('-')).then(newTextChan => {
-                    newTextChan.setParent(category);
+                    newTextChan.setParent(category).then(() => {
+                        newTextChan.lockPermissions();
+                    });
                     newTextChan.send(config["new-chatroom-msg"])
+                    newTextChan.send("*Be sure to delete this room with `!end` when you are finished with it*")
 
                     message.reply(`we made your channel <#${newTextChan.id}>, click the link to join!`);
                 });
 
                 // Create voice channel
                 message.guild.channels.create('Voice', {'type': 'voice'}).then(newVoiceChan => {
-                    newVoiceChan.setParent(category);
+                    newVoiceChan.setParent(category).then(() => {
+                        newTextChan.lockPermissions();
+                    });
                 });
 
             });

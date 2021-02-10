@@ -12,6 +12,7 @@ module.exports = {
         const chan = message.channel;
 
         if (chan.parent.name.endsWith(config['student-chan-specifier'])) {
+            // Rename the temp room
 
             chan.parent.setName(args.join(' ') + " " + config['student-chan-specifier']);
             chan.setName(args.join('-')).then(() => {
@@ -21,6 +22,7 @@ module.exports = {
             return true;
 
         } else if (chan.parent.name.endsWith(config['sticky-chan-specifier'])) {
+            // Rename the sticky room
 
             chan.parent.setName(args.join(' ') + " " + config['sticky-chan-specifier']);
             chan.setName(args.join('-')).then(() => {

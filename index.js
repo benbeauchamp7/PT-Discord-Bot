@@ -2,9 +2,15 @@
 const Discord = require('discord.js');
 const bot = new Discord.Client({ partials: ['REACTION']});
 
-// Unique token that allows the bot to login to discord
 const fs = require('fs');
-const token = fs.readFileSync("SecureKey", "utf-8");
+
+// For .env variables
+const dotenv = require('dotenv');
+dotenv.config();
+
+// Scheduler to reboot the bot every night for a new Heroku dyno and to save files to s3
+// import schedule from 'node-schedule'
+const schedule = require('node-schedule')
 
 // Get audit logger
 const logger = require('./custom_modules/logging.js');
@@ -20,7 +26,7 @@ const prefix = config['prefix'];
 const doModChat = config['do-moderate-chat'];
 const otherCommands = config['other-commands'];
 
-// Import all the commands from the commands folder
+// Imports all the commands from the commands folder
 bot.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
@@ -29,27 +35,34 @@ for (const file of commandFiles) {
     bot.commands.set(command.name, command);
 }
 
-// Handle automatic cleanup of channels
+// Handles automatic cleanup of channels
 let intervalMap = new Map();
 let warnMap = new Map();
 
-// Keeps track of all the basic !vqs to help keep channels clean
+// Holds most recent !vq for each channel so that the next !vq deletes the previous
 let activeVQs = new Map();
 
-// Tracks users on cooldown from making rooms
+// Tracks users on cooldown from making rooms (Prevents spam creating rooms)
 let cooldownUsers = new Map();
 
+// Contains the queue system in the form {course -> [queue]}
 let queues = new Map();
 let cycles = new Map();
 
+// Adds an inactivity timer to a chat room
 function addChanInterval(categoryChannel) {
+    // Reset the timer
     warnMap.set(categoryChannel.id, null);
+
+    // Create timer and store in intervalMap, accessible by the channelID
     const intervalID = bot.setInterval(checkChanTimeout, config['room-inactivity-update'], categoryChannel);
     intervalMap.set(categoryChannel.id, intervalID);
 
     logger.log(`Timer added`, `#${categoryChannel.name}`);
 }
 
+// Checks time remaining until a chat room is deleted for inactivity
+// Issues a 5 minute warning before deletion, and cancels the warning if a messages is detected
 async function checkChanTimeout(categoryChannel) {
 
     // Get the channels from the student category
@@ -63,21 +76,21 @@ async function checkChanTimeout(categoryChannel) {
         }
     }
     
-    // If the text channel has been inactive for the configurable time
-    // console.log(textChan.lastMessage)
+    // Grabs the last message of a channel
     let last = await textChan.messages.fetch({limit: 1});
     last = last.first();
 
+    // Check for both regular and sticky channels that are out of time.
     if ( (textChan.parent.name.endsWith(config["student-chan-specifier"]) && last.createdAt.getTime() + config['text-room-timeout'] < Date.now())
     ||  (textChan.parent.name.endsWith(config["sticky-chan-specifier"]) && last.createdAt.getTime() + config['sticky-room-timeout'] < Date.now()) ) {
 
-        // And the cooresponding voice channel is also empty
+        // And if the voice channel is also empty...
         if (voiceChanCount === 0) {
 
-            // Begin countdown to message deletion
+            // Begin countdown to channel deletion
             if (warnMap.get(categoryChannel.id) === null) {
                 const tID = setTimeout(() => {
-                    // Use the end command to erase the channel
+                    // Use the end command to erase the channel when time is up
                     textChan.send("Channel inactive, deleting...").then(deleteMessage => {
                         bot.commands.get("end").execute(deleteMessage, '', { intervalMap: intervalMap });
                         warnMap.delete(categoryChannel.id);
@@ -85,12 +98,13 @@ async function checkChanTimeout(categoryChannel) {
                     });
                 }, config['text-room-timeout-afterwarning']);
 
+                // Save the timeout in warnMap so it can be cleared later
                 warnMap.set(categoryChannel.id, tID);
                 textChan.send(`This chat will be deleted in ${config['text-room-timeout-afterwarning'] / 1000 / 60} minutes due to inactivity. Say something to delay the timer!`)
                 logger.log(`Inactivity warning`, `#${categoryChannel.name}`);
             }
 
-            // Local collector to reset inactivity
+            // Local message collector to reset inactivity
             const collector = new Discord.MessageCollector(textChan, response => !response.author.bot, {"time": config['text-room-timeout-afterwarning']})
             collector.on('collect', reply => {
                 // Activity detected, cancel countdown
@@ -110,12 +124,14 @@ function isOnCooldown(userID) {
     return cooldownUsers.has(userID);
 }
 
-bot.on('ready', () => {
+// Runs when the bot is booted up from an off state
+bot.on('ready', async () => {
+
     // Ping console when bot is ready
     console.log('Bot Ready!');
     logger.log("Bot Ready", "none");
 
-    // Scan for student channels on bot creation
+    // Scan for student channels to begin inactivity timers
     for (const chan of bot.channels.cache) {
         // If student category
         if (chan[1] instanceof Discord.CategoryChannel && (chan[1].name.endsWith(config['student-chan-specifier'] || chan[1].name.endsWith(config['sticky-chan-specifier'])))) {
@@ -123,21 +139,28 @@ bot.on('ready', () => {
             addChanInterval(chan[1]);
             
         } else if (chan[1] instanceof Discord.TextChannel && chan[1].name.endsWith('-archived')) {
-            
+            // Add an archive timer that deletes archived channels after a configurable time
             bot.commands.get('end').addArchiveInterval(chan[1], intervalMap);
         }
     }
 
-    // Set up queue map
+    // Initialize the queue map
     for (course of config['course-channels']) {
         queues.set(course, []);
     }
 
-    queues = save.loadQueue();
+    // Grab log file from s3 (if we had made one before)
+    save.loadLog();
+
+    // Loads queues from a saved file
+    queues = await save.loadQueue();
+
+    console.log('Queue Ready!');
+    logger.log("Queue Ready", "none");
 
 });
 
-// Fires on uncached reaction events for course enrollment
+// Fires on uncached reaction events for course enrollment (Carl-bot handles this part now)
 bot.on('raw', (packet) => {
     // Only fire on message reactions
     if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) { return; }
@@ -174,6 +197,7 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
     const channelLeft = oldMember.channelID;
     const user = newMember.member
 
+    // Cycle functionality (unimplemented)
     if (channelLeft !== null && channelLeft !== undefined && channelLeft.name === "Cycling Room") {
         // Remove from cycle
         if (!cycles.has(msg.channel.id)) { cycles.set(voiceChan.id, []); }
@@ -195,12 +219,14 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
 
     }
 
+    // If the user leaves a channel, do nothing (if not cycle)
     if (channelJoined === null || channelJoined === undefined) { return; }
 
     if (channelJoined == config['click-to-join-id']) {
         // If the user isn't on cooldown for creating a room
         if (!isOnCooldown(user.id)) {
             bot.channels.fetch(config['bot-channel-id']).then(chan => {
+                // Send a dummy message into the bot-channel as an anchor
                 chan.send('Creating Channel...').then(msg => {
                     const options = {
                         bot: bot,
@@ -211,7 +237,10 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
 
                     bot.commands.get("create").execute(msg, '', options);
                     msg.delete();
+
+                    // Give the user a room creation cooldown
                     cooldownUsers.set(user.id, Date.now());
+
                 });
                 logger.log("Channel Created (VC)", `<@${user.id}>`)
             });
@@ -220,12 +249,13 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
             logger.log("cooldown hit (VC)", `<@${user.id}>`)
         }
     } else if (warnMap.has(newMember.channel.parentID)) {
+        // If a channel was about to be deleted for inactivity when someone joined, clear the timer so it isn't deleted while someone is in the VC
         clearTimeout(warnMap.get(newMember.channel.parentID));
         warnMap.set(newMember.channel.parentID, null);
     }
 });
 
-// Add intervals to new student channels
+// Add delete intervals to newly created student channels and archive channels
 bot.on('channelCreate', chan => {
     if (chan instanceof Discord.CategoryChannel && (chan.name.endsWith(config['student-chan-specifier'] || chan.name.endsWith(config['sticky-chan-specifier'])))) {
         console.log(`Timer added to "${chan.name}"`)
@@ -236,7 +266,7 @@ bot.on('channelCreate', chan => {
     }
 });
 
-// Destory timers on student channels when removed
+// Clean up timers on student channels when removed
 bot.on('channelDelete', chan => {
     if (intervalMap.has(chan.id)) {
         console.log(`Timer deleted from "#${chan.name}"`)
@@ -252,17 +282,24 @@ bot.on('message', msg => {
     // Prevent recursion
     if (msg.author.bot) { return; }
     
+    // Message into words as args, grab first word as command
     const args = msg.content.slice(prefix.length).split(/ +/);
     const command = args.shift().toLowerCase();
 
-    // Chat moderation
+    // Basic chat moderation
     var badWordFound = false;
     if (doModChat) {
+
         for (const badWord of bannedChatWords) {
+
+            // If the message contained a banned word, exit the loop
             if (badWordFound) { break; }
 
             for (const userWord of msg.content.split(' ')) {
+                // Scan for bad language word by word
                 if (badWord == userWord.toLowerCase()) {
+
+                    // Respond with a warning
                     const modReplies = config["chat-moderation-messages"];
                     const selected = modReplies[Math.floor(Math.random() * modReplies.length)];
 
@@ -283,6 +320,7 @@ bot.on('message', msg => {
     // Command handler
     if (msg.content.startsWith(prefix) && !badWordFound) {
         try {
+            // Just a conglomeration of stuff the commands might need to execute
             const options = {
                 bot: bot,
                 intervalMap: intervalMap,
@@ -293,16 +331,19 @@ bot.on('message', msg => {
                 cycles: cycles
             }
             
-            isOnCooldown(msg.author.id); // Clear cooldown if applicable
+            isOnCooldown(msg.author.id); // Update channel creation cooldown
 
             bot.commands.get(command).execute(msg, args, options).then(didSucceed => {
+                // Add a cooldown for users who created a room
                 if (didSucceed && command === "create") {
                     cooldownUsers.set(msg.author.id, Date.now());
                 }
             }).catch(err => {
                 if (err instanceof CommandError) {
+                    // Catch CommandErrors as user errors
                     logger.log(err.message, err.user)
                 } else {
+                    // Catch other errors as programming errors
                     logger.logError(err);
                 }
                 
@@ -310,6 +351,7 @@ bot.on('message', msg => {
 
         } catch (err) {
 
+            // Catch invalid commands
             if (!otherCommands.includes(command)) {
                 replies.timedReply(msg, 'you have written an invalid command, maybe you made a typo?', config['bot-alert-timeout']);
 
@@ -320,7 +362,7 @@ bot.on('message', msg => {
     
 });
 
-// Catch reactions for role assignment
+// Catch reactions for role assignment (Carl-bot handles this part now)
 bot.on('messageReactionAdd', async (reaction, user) => {
     if (reaction === undefined) {
         logger.log(`reaction undefined`, `${user}`);
@@ -329,13 +371,13 @@ bot.on('messageReactionAdd', async (reaction, user) => {
         logger.log(`user undefined`, `<@${reaction[1]}>`);
         return;
     }
-
+    
     // Fetch the reaction if needed
     if (reaction.partial) {
         try { await reaction.fetch() }
         catch (err) { console.log("Reaction fetch failed, ", err); return; }
     }
-
+    
     if (reaction.message.channel.name === "course-enrollment") {
         reaction.message.guild.members.fetch(user.id).then(member => {
             member.roles.add(config[`role-${reaction._emoji.name}-code`]);
@@ -344,6 +386,7 @@ bot.on('messageReactionAdd', async (reaction, user) => {
     }
 });
 
+// Catch reactions for role assignment (Carl-bot handles this part now)
 bot.on('messageReactionRemove', async (reaction, user) => {
     if (reaction === undefined) {
         logger.log(`reaction undefined`, `${user}`);
@@ -367,4 +410,45 @@ bot.on('messageReactionRemove', async (reaction, user) => {
     }
 });
 
-bot.login(token);
+// Create shutdown signal every 24 hours so that the bot reboots at night
+// Currently resets at hour 2
+schedule.scheduleJob('0 2 * * *', function() {
+    // Use SIGTERM here because that is heroku's shutdown warning signal
+    process.emit('SIGTERM');
+});
+
+process.on("SIGINT", () => {
+    logger.log("SIGINT sent, sending SIGTERM for shutdown", "#system");
+    process.emit('SIGTERM');
+})
+
+// Catch shutdown signal to close gracefully
+process.on('SIGTERM', async () => {
+    logger.log("SIGTERM sent, shutdown requested", "#system");
+
+    let promises = [];
+
+    // Save logs to s3
+    promises.push(await save.saveLogs());
+
+    // Un-nest promises
+    promises = promises.flat();
+    
+    // Save queues to s3
+    promises.push(save.uploadQueue());
+
+    console.log(promises);
+    
+    // Wait for all uploads to be done before exiting
+    for (let i = 0; i < promises.length; i++) {
+        await promises[i];
+    }
+    
+    logger.log("Cleanup complete, exiting.", "#system");
+
+    // Exit
+    process.exit(0);
+
+});
+
+bot.login(process.env.BOT_TOKEN); // For cloud

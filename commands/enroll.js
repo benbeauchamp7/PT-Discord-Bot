@@ -2,10 +2,12 @@ const logger = require('../custom_modules/logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
+// Carl-bot handles the enrollment now
 module.exports = {
     name: 'enroll',
     description: 'creates the enrollment message for the roles channel',
     async execute(message, args, options) {
+        return false;
         const timeout = config['bot-alert-timeout'];
 
         // Only bot managers may use this command

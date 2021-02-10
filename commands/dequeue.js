@@ -5,17 +5,6 @@ const replies = require('../custom_modules/replies.js');
 const save = require('../custom_modules/save.js');
 const CommandError = require('../custom_modules/commandError.js');
 
-async function checkMention(mention, msg) {
-    if (mention.match(/^<@!?(\d+)>$/g)) {
-        let id = mention.replace(/[\\<>@#&!]/g, "");
-
-        if (await msg.guild.members.fetch(id) === undefined) { return false; }
-
-        return id;
-    }
-    return false;
-}
-
 function roleCheck(msg, roles) {
     return msg.member.roles.cache.find(r => roles.includes(r.name))
 }
@@ -25,9 +14,8 @@ module.exports = {
     description: 'puts a student into a queue',
     async execute(msg, args, options) {
         let queues = options.queues;
-        let user = Object.assign({}, msg.author);
-        let adminDQ = false;
 
+        // Target represents the user(s) to be dequeued 
         let target = new Map();
         target = msg.mentions.users;
 
@@ -57,6 +45,7 @@ module.exports = {
             dqSelf = true;
         }
 
+        // Find the user inside the queue system
         let found = false
         for ([id, member] of target) {
             dqAllIds += ` <@${id}>`
@@ -76,11 +65,13 @@ module.exports = {
                         found = true
     
                         if (dqSelf) {
+                            // We are only removing this user, so we exit the function here
                             logger.log(`!dq self from ${course}`, `${msg.author}`)
                             msg.react('✅')
                             save.saveQueue(queues);
                             return true;
                         } else {
+                            // Record the data of the removed member to output later
                             dqString += ` ${member}`;
                             dqCourses += ` ${course}`;
                             dqPrintString += `${member}\n`

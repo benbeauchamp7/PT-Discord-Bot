@@ -1,5 +1,4 @@
 SecureKey
 node_modules
-.vscode/
 .*
 !.gitignore
