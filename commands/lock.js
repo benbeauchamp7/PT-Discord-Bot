@@ -19,37 +19,44 @@ module.exports = {
                 // While in a matching voice channel
                 let voiceChan = message.member.voice.channel;
                 if (voiceChan !== null && voiceChan.parent === parent && voiceChan.name === "Voice") {
-                    
-                    // Remove permissions from welcome role
-                    voiceChan.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
-                        VIEW_CHANNEL: true,
-                        CONNECT: false,
-                        SPEAK: true
-                    });
 
+                    let perms = [];
+                    // Deny everyone of connecting perms
+                    perms.push(
+                        {
+                            id: message.guild.roles.cache.get(config['role-welcome-code']),
+                            deny: ['CONNECT']
+                        }
+                    )
+                    
                     // Set permissions for all the occupant members
                     for (fella of voiceChan.members) {
-                        voiceChan.updateOverwrite(fella[1], {
-                            VIEW_CHANNEL: true,
-                            CONNECT: true,
-                            SPEAK: true
-                        });
+                        perms.push(
+                            {
+                                id: fella[1],
+                                allow: ['CONNECT']
+                            }
+                        )
                     }
 
                     // Set permissions for elevated members
-                    var i = 0;
                     for (role of voiceChan.guild.roles.cache) {
                         if (config['elevated-roles'].includes(role[1].name)) {
-                            voiceChan.updateOverwrite(role[1], {
-                                VIEW_CHANNEL: true,
-                                CONNECT: true,
-                                SPEAK: true
-                            });
+                            perms.push(
+                                {
+                                    id: fella[1],
+                                    allow: ['CONNECT']
+                                }
+                            )
                         }
                     }
 
-                    message.reply("locked! Nobody new can join this voice channel (other than staff)")
-                    logger.log(`locked #${parent.name}`, `${message.author}`)
+                    // Apply changes
+                    voiceChan.overwritePermissions(perms).then(() => {
+                        message.reply("locked! Nobody new can join this voice channel (other than staff)")
+                        logger.log(`locked #${parent.name}`, `${message.author}`)
+                    });
+
 
                 } else {
                     // You must be in the corresponding voice channel

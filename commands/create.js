@@ -29,38 +29,44 @@ module.exports = {
 
             // Create a category for the student picked topic
             if (args.length === 0) { args = ['Unnamed']; }
-            message.guild.channels.create(args.join(' ') + " " + config['student-chan-specifier'], {'type': 'category'}).then(category => {
+            message.guild.channels.create(args.join(' ') + " " + config['student-chan-specifier'], {
+                'type': 'category',
+                'permissionOverwrites': [
+                    {
+                        // Remove view permissions from everyone
+                        id: message.guild.roles.everyone,
+                        deny: ['VIEW_CHANNEL']
+                    },
+                    {
+                        // Set view for "welcome role"
+                        id: message.guild.roles.cache.get(config['role-welcome-code']),
+                        allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+
+                    }
+                ]
+            }).then(category => {
 
                 // Move cat above archive
                 category.setPosition(-1, {"relative": true}).then((category) => {
-                    // Remove view permissions from everyone
-                    category.updateOverwrite(message.guild.roles.everyone, {
-                        VIEW_CHANNEL: false
-                    });
-    
-                    // Set view for "welcome role"
-                    category.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
-                        VIEW_CHANNEL: true,
-                        CONNECT: true,
-                        SPEAK: true
-                    });
     
                     // Create text channel
-                    message.guild.channels.create(args.join('-')).then(newTextChan => {
-                        newTextChan.setParent(category);
-    
-                         // Remove view permissions from everyone
-                        newTextChan.updateOverwrite(message.guild.roles.everyone, {
-                            VIEW_CHANNEL: false
-                        });
-    
-                        // Set view for "welcome role"
-                        newTextChan.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
-                            VIEW_CHANNEL: true,
-                            CONNECT: true,
-                            SPEAK: true
-                        });
-    
+                    message.guild.channels.create(args.join('-'), {
+                        'parent': category,
+                        'permissionOverwrites': [
+                            {
+                                // Remove view permissions from everyone
+                                id: message.guild.roles.everyone,
+                                deny: ['VIEW_CHANNEL']
+                            },
+                            {
+                                // Set view for "welcome role"
+                                id: message.guild.roles.cache.get(config['role-welcome-code']),
+                                allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+        
+                            }
+                        ]
+                    }).then(newTextChan => {
+
                         newTextChan.send(config["new-chatroom-msg"])
     
                         if (isAuto === undefined) {
@@ -69,49 +75,28 @@ module.exports = {
                     });
     
                     // Create voice channels
-                    message.guild.channels.create('Voice', {'type': 'voice'}).then(voiceChan => {
-                        voiceChan.setParent(category);
-    
-                        // Remove view permissions from everyone
-                        voiceChan.updateOverwrite(message.guild.roles.everyone, {
-                            VIEW_CHANNEL: false
-                        });
-    
-                        // Set view for "welcome role"
-                        voiceChan.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
-                            VIEW_CHANNEL: true,
-                            CONNECT: true,
-                            SPEAK: true
-                        });
+                    message.guild.channels.create('Voice', {
+                        'type': 'voice',
+                        'parent': category,
+                        'permissionOverwrites': [
+                            {
+                                // Remove view permissions from everyone
+                                id: message.guild.roles.everyone,
+                                deny: ['VIEW_CHANNEL']
+                            },
+                            {
+                                // Set view for "welcome role"
+                                id: message.guild.roles.cache.get(config['role-welcome-code']),
+                                allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+        
+                            }
+                        ]
+                    }).then(voiceChan => {
     
                         if (isAuto) {
                             user.voice.setChannel(voiceChan.id);
                         }
     
-                    }).then(voiceChan => {
-                        // TODO: CYCLES
-                        // message.guild.channels.create('Cycling Room', {'type': 'voice'}).then(cycleChan => {
-                        //     cycleChan.setParent(category);
-    
-                        //     // Remove all permissions from everyone
-                        //     cycleChan.updateOverwrite(cycleChan.guild.roles.everyone, {
-                        //         VIEW_CHANNEL: false,
-                        //         CONNECT: false,
-                        //         SPEAK: false
-                        //     });
-    
-                        //     // Set permissions for elevated members
-                        //     for (role of cycleChan.guild.roles.cache) {
-                        //         if (config['elevated-roles'].includes(role[1].name)) {
-                        //             cycleChan.updateOverwrite(role[1], {
-                        //                 VIEW_CHANNEL: true,
-                        //                 CONNECT: true,
-                        //                 SPEAK: true
-                        //             });
-                        //         }
-                        //     }
-    
-                        // });
                     });
                 });
 

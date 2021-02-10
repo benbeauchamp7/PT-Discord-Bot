@@ -1,5 +1,5 @@
 {
-    "prefix": "!",
+    "prefix": "?",
     "do-moderate-chat": true,
     "do-archive-deletions": true,
 
@@ -23,7 +23,8 @@
     "channel-create-cooldown": 120000,
     "vq-expire": 900000,
 
-    "elevated-roles": ["Peer Teacher", "Bot Manager", "Professor", "Off the Clock"],
+    "elevated-roles": ["Peer Teacher", "Moderator", "Professor", "TA", "Off the Clock"],
+    "admin-roles": ["Moderator"],
     "queue-list-amount": 10,
 
     "personal-q-aliases": ["personal", "mine"],
