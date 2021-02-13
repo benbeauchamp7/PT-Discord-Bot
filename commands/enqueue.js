@@ -28,6 +28,7 @@ module.exports = {
         let user = Object.assign({}, msg.author);
         let adminQ = false;
         let qTarget = msg.channel.name;
+        let position = -1;
 
         // Check for elevated user to allow args
         if (roleCheck(msg, config['elevated-roles']) && args.length !== 0) {
@@ -41,24 +42,50 @@ module.exports = {
             adminQ = true;
             user.id = mentionID;
 
-            // Allow for !q targeting
-            if (args.length >= 3 && args[1].toLowerCase() === 'into') {
-                if (config['emote-names'].includes(args[2])) {
-                    qTarget = "csce-" + args[2];
-                    qTargetPretty = qTarget;
-                } else if (config["personal-q-aliases"].includes(args[2])) {
-                    qTarget = `<@${msg.author.id}>`;
-                    qTargetPretty = `${msg.author}'s personal queue`;
-                } else {
-                    replies.timedReply(msg, "you can only place students into course queues (121, 221, ...), or your personal queue (with 'personal' or 'mine')", config['bot-alert-timeout']);
-                    throw new CommandError("!q invalid target", `${msg.author}`);
+            // !q special arguments
+            let intoIndex = args.indexOf("into");
+            let atIndex = args.indexOf("at");
+            if (intoIndex !== -1 || atIndex !== -1) {
+                if (intoIndex !== -1) {
+                    if (intoIndex + 1 >= args.length) {
+                        replies.timedReply(msg, "keyword `into` requires an argument in the form `[121 | 221 | ... | 315 | mine | personal]`", config['bot-alert-timeout']);
+                        throw new CommandError("!q into has no target", `${msg.author}`);
+                    } else if (config['emote-names'].includes(args[intoIndex + 1])) {
+                        qTarget = "csce-" + args[intoIndex + 1];
+                        qTargetPretty = qTarget;
+                    } else if (config["personal-q-aliases"].includes(args[intoIndex + 1])) {
+                        qTarget = `<@${msg.author.id}>`;
+                        qTargetPretty = `${msg.author}'s personal queue`;
+                    } else {
+                        replies.timedReply(msg, `argument "${args[intoIndex + 1]}" following \`into\` is not a course, \`mine\`, or \`personal\``, config['bot-alert-timeout']);
+                        throw new CommandError("!q into has invalid target", `${msg.author}`);
+                    }
+
+                }
+
+                if (atIndex !== -1) {
+                    if (atIndex + 1 >= args.length) {
+                        replies.timedReply(msg, "keyword `at` requires a number argument for the position of the user", config['bot-alert-timeout']);
+                        throw new CommandError("!q at has no position argument", `${msg.author}`);
+                    } else if (isNaN(args[atIndex + 1])) {
+                        replies.timedReply(msg, `specified position "${args[intoIndex + 1]}" is not a number`, config['bot-alert-timeout']);
+                        throw new CommandError("!q at has non-numeric position argument", `${msg.author}`);
+                    } else if (!queues.has(qTarget)) {
+                        replies.timedReply(msg, `no place to queue user into was specified. Use this command in a course channel, or specify a target by using \`into\` in the form \`!q @user into <course> at <position>\``, config['bot-alert-timeout']);
+                        throw new CommandError("!q at has non-numeric position argument", `${msg.author}`);
+                    } else if (args[atIndex + 1] > queues.get(qTarget).length || args[atIndex + 1] <= 0) {
+                        replies.timedReply(msg, "specified position is outside the range of the queue", config['bot-alert-timeout']);
+                        throw new CommandError("!q at has out-of-bounds position argument", `${msg.author}`);
+                    } else {
+                        // The only time we DONT throw an error
+                        position = parseInt(args[atIndex + 1], 10);
+                    }
                 }
 
             } else if (args.length > 1) {
                 replies.timedReply(msg, "target !q syntax: `!q @user INTO [<course number> | personal | mine]`", config['bot-alert-timeout'])
                 throw new CommandError("!q target invalid syntax", `${msg.author}`);
             } else if (args.length === 1 && !config['course-channels'].includes(qTarget)) {
-
                 replies.timedReply(msg, "you can only use !q like this in a csce channel", config['bot-alert-timeout']);
                 throw new CommandError("!q wrong channel", `${msg.author}`);
             }
@@ -88,10 +115,15 @@ module.exports = {
             }
         }
 
-        // Get the list then add the new user to the back
+        // Get the list then add the new user to the specified position
         let course = qTarget;
         if (!queues.has(qTarget)) { queues.set(qTarget, []); }
-        queues.get(course).push({user: user.id, time: Date.now(), ready: true})
+
+        if (position === -1) { 
+            queues.get(course).push({user: user.id, time: Date.now(), ready: true});
+        } else {
+            queues.get(course).splice(position-1, 0, {user: user.id, time: "Manual", ready: true})
+        }
 
         // Give them the queued role
         msg.guild.members.fetch(user.id).then(user => {
@@ -112,7 +144,7 @@ module.exports = {
         if (!qTarget.startsWith('<@')) {
             bot.channels.fetch(config['q-alert-id']).then(channel => {
                 const tag = `role-${qTarget.substring(5)}-code`;
-                channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${qTarget} queue and requires *your* assistance!`);
+                channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${qTarget} queue and requests the help of a peer teacher!`);
             });
         }
 

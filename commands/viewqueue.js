@@ -20,8 +20,10 @@ function getPlace(rank) {
     }
 }
 
-function parseTime(time) {
-    // Takes a time object and formats it nicely for output
+function parseTime(timeDisplay) {
+    // Takes a time object and formats it nicely for output, or repeats back the string
+    if (isNaN(timeDisplay)) { return timeDisplay; }
+    let time = new Date(timeDisplay);
 
     let amPm = (time.getHours() >= 12 ? 'PM' : 'AM');
     let hrs = (time.getHours() > 12 ? time.getHours() - 12 : time.getHours());
@@ -42,8 +44,7 @@ async function displayCurrChan(msg, qList) {
             qNameStr += `~~${i + 1}. ${await msg.guild.members.fetch(qList[i].user)}~~\n`
         }
 
-        let d = new Date(qList[i].time);
-        qTimeStr += parseTime(d) + '\n';
+        qTimeStr += parseTime(qList[i].time) + '\n';
     }
 
     if (qList.length === 0) {
@@ -177,7 +178,7 @@ function combineQueues(msg, args, queues) {
             }
 
             // If we haven't selected a min, or if this one is the new min, update the min
-            if (min === null || targetQueues[c][0].time < min) {
+            if (min === null || typeof targetQueues[c][0].time === 'string' || targetQueues[c][0].time < min) {
                 min = targetQueues[c][0].time;
                 minIndex = c;
             }
@@ -209,7 +210,12 @@ function combineQueues(msg, args, queues) {
     return combined;
 }
 
-async function prepareEmbed(msg, courses, combined, distro) {
+async function prepareEmbed(msg, courses, combined, distro, options) {
+    
+    let maxLen = config['queue-list-amount'];
+    if (options['doExtend']) { maxLen = combined.length; }
+
+
     // Replace personal queue aliases
     for (let i = 0; i < courses.length; i++) {
         if (courses[i].startsWith('<@')  || config["personal-q-aliases"].includes(courses[i])) {
@@ -242,7 +248,7 @@ async function prepareEmbed(msg, courses, combined, distro) {
     let qTimeStr = "";
     let i = 0;
     let numDisplayed = 0;
-    for (i = 0; i < combined.length && numDisplayed < config['queue-list-amount']; i++, numDisplayed++) {
+    for (i = 0; i < combined.length && numDisplayed < maxLen; i++, numDisplayed++) {
         
         if (combined[i].ready === true || combined[i].ready === undefined) {
             qNameStr += `${i + 1}. ${await msg.guild.members.fetch(combined[i].user)}\n`   
@@ -252,17 +258,17 @@ async function prepareEmbed(msg, courses, combined, distro) {
         }
         
         qClassStr += `${combined[i].course}\n`;
-        
-        let d = new Date(combined[i].time);
-        qTimeStr += parseTime(d) + '\n';
+    
+        qTimeStr += parseTime(combined[i].time) + '\n'
         
         // Conditions for compression
-        if (i+2 < combined.length && 
-            numDisplayed+2 < config['queue-list-amount'] && 
+        if (options['doCompress'] &&
+            i+2 < combined.length && 
+            numDisplayed+2 < maxLen && 
             combined[i].ready === false && 
             combined[i+1].ready === false && 
             combined[i+2].ready === false) {
-                
+
             // Add ...s and a newline so everything is aligned
             qNameStr += "...\n";
             qClassStr += "\n";
@@ -270,7 +276,7 @@ async function prepareEmbed(msg, courses, combined, distro) {
             numDisplayed++;
 
             // Seek passed groups of nr people (looking ahead so we include the last fella)
-            for (; i+2 < combined.length && i+2 < config['queue-list-amount'] && combined[i+2].ready === false; i++) {}
+            for (; i+2 < combined.length && i+2 < maxLen && combined[i+2].ready === false; i++) {}
         }
     }
 
@@ -287,8 +293,7 @@ async function prepareEmbed(msg, courses, combined, distro) {
         }
 
         qClassStr += `\n${last.course}\n`
-        let d = new Date(last.time);
-        qTimeStr += '\n' + parseTime(d) + '\n';
+        qTimeStr += '\n' + parseTime(last.time) + '\n';
     }
 
     // Format queue distributions
@@ -301,6 +306,16 @@ async function prepareEmbed(msg, courses, combined, distro) {
     let footerString = `Queue is valid as of ${parseTime(new Date())}`
     if (msg.channel.name !== "command-spam") {
         footerString += ` & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`;
+    }
+
+    const totalChars = qNameStr.length + qClassStr.length + qTimeStr.length + footerString.length;
+    if (qNameStr.length > 1024 ||
+        qClassStr.length > 1024 ||
+        qTimeStr.length > 1024 ||
+        totalChars > 6000) {
+
+        replies.timedReply(msg, "the queue you are trying to create is too large to send!", config['bot-alert-timeout']);
+        throw new CommandError("!vq embed too large", `${msg.author}`);
     }
 
     if (combined.length === 0) {
@@ -364,8 +379,22 @@ module.exports = {
 
         let qList = await queues.get(msg.channel.name);
         
+        let embedOptions = {
+            'doCompress': true,
+            'doExtend': false
+        }
 
         if (args.length > 0) {
+
+            // VQ options
+            if (args[0][0] == '-') {
+                flags = args[0].split("");
+                args.splice(0, 1);
+
+                // Grab options from args
+                if (flags.indexOf("e") !== -1) { embedOptions['doExtend'] = true; }
+                if (flags.indexOf("c") !== -1) { embedOptions['doCompress'] = false; }
+            }
 
             if (args[0] == 'all') {
                 // Display all the courses
@@ -390,9 +419,10 @@ module.exports = {
 
             }
 
+
             let combined = combineQueues(msg, args, queues);
 
-            deliverable = await prepareEmbed(msg, args, combined, getDistro(args, queues));
+            deliverable = await prepareEmbed(msg, args, combined, getDistro(args, queues), embedOptions);
 
         } else {
 

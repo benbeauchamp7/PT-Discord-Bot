@@ -13,6 +13,11 @@ const s3 = new AWS.S3({
     secretAccessKey: s3KEY
 });
 
+function parseTime(time) {
+    if (isNaN(time)) { return time; }
+    return parseInt(time, 10);
+}
+
 module.exports = {
     // queue maps courses to {user, time} objects
 	saveQueue: function(queue) {
@@ -90,7 +95,7 @@ module.exports = {
                     queue.set(data[0], []);
                 }
 
-                queue.get(data[0]).push( {user: data[1], time: parseInt(data[2], 10), ready: data[3] === 'true' || data[3] === undefined ? true : false} );
+                queue.get(data[0]).push( {user: data[1], time: parseTime(data[2]), ready: data[3] === 'true' || data[3] === undefined ? true : false} );
             });
         }
         return queue;
@@ -128,7 +133,7 @@ module.exports = {
                 }
 
                 // Populate the queue with the student
-                queue.get(data[0]).push( {user: data[1], time: parseInt(data[2], 10), ready: data[3] === 'true' || data[3] === undefined ? true : false} );
+                queue.get(data[0]).push( {user: data[1], time: parseTime(data[2]), ready: data[3] === 'true' || data[3] === undefined ? true : false} );
             });
 
             return queue;
