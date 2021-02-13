@@ -241,18 +241,32 @@ async function prepareEmbed(msg, courses, combined, distro) {
     let qClassStr = "";
     let qTimeStr = "";
     let i = 0;
-    for (i = 0; i < combined.length && i < config['queue-list-amount']; i++) {
+    let numDisplayed = 0;
+    for (i = 0; i < combined.length && numDisplayed < config['queue-list-amount']; i++, numDisplayed++) {
         
         if (combined[i].ready === true || combined[i].ready === undefined) {
-            qNameStr += `${i + 1}. ${await msg.guild.members.fetch(combined[i].user)}\n`
+            qNameStr += `${i + 1}. ${await msg.guild.members.fetch(combined[i].user)}\n`   
         } else {
+            // Display with strikethrough to indicate "not ready"
             qNameStr += `~~${i + 1}. ${await msg.guild.members.fetch(combined[i].user)}~~\n`
         }
-
+        
         qClassStr += `${combined[i].course}\n`;
-
+        
         let d = new Date(combined[i].time);
         qTimeStr += parseTime(d) + '\n';
+        
+        // Conditions for compression
+        if (i+2 < combined.length && numDisplayed+2 < config['queue-list-amount'] && combined[i+1].ready === false && combined[i+2].ready === false) {
+            // Add ...s and a newline so everything is aligned
+            qNameStr += "...\n";
+            qClassStr += "\n";
+            qTimeStr += "\n";
+            numDisplayed++;
+
+            // Seek passed groups of nr people (looking ahead so we include the last fella)
+            for (; i+2 < combined.length && i+2 < config['queue-list-amount'] && combined[i+2].ready === false; i++) {}
+        }
     }
 
     // Check if the whole queue isn't displayed
