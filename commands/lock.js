@@ -19,37 +19,56 @@ module.exports = {
                 // While in a matching voice channel
                 let voiceChan = message.member.voice.channel;
                 if (voiceChan !== null && voiceChan.parent === parent && voiceChan.name === "Voice") {
-                    
-                    // Remove permissions from welcome role
-                    voiceChan.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
-                        VIEW_CHANNEL: true,
-                        CONNECT: false,
-                        SPEAK: true
-                    });
+                    voiceChan.lockPermissions().then(voiceChan => {
+                        let perms = [];
 
-                    // Set permissions for all the occupant members
-                    for (fella of voiceChan.members) {
-                        voiceChan.updateOverwrite(fella[1], {
-                            VIEW_CHANNEL: true,
-                            CONNECT: true,
-                            SPEAK: true
-                        });
-                    }
+                        // Deny everyone of view
+                        perms.push(
+                            {
+                                id: message.guild.roles.everyone,
+                                deny: ['VIEW_CHANNEL']
+                            }
+                        )
 
-                    // Set permissions for elevated members
-                    var i = 0;
-                    for (role of voiceChan.guild.roles.cache) {
-                        if (config['elevated-roles'].includes(role[1].name)) {
-                            voiceChan.updateOverwrite(role[1], {
-                                VIEW_CHANNEL: true,
-                                CONNECT: true,
-                                SPEAK: true
-                            });
+                        // Deny # welcome of connecting perms
+                        perms.push(
+                            {
+                                id: message.guild.roles.cache.get(config['role-welcome-code']),
+                                deny: ['CONNECT'],
+                                allow: ['VIEW_CHANNEL']
+                            }
+                        )
+                        
+                        
+                        // Set permissions for all the occupant members
+                        for (fella of voiceChan.members) {
+                            perms.push(
+                                {
+                                    id: fella[1],
+                                    allow: ['CONNECT', 'VIEW_CHANNEL']
+                                }
+                            )
                         }
-                    }
 
-                    message.reply("locked! Nobody new can join this voice channel (other than staff)")
-                    logger.log(`locked #${parent.name}`, `${message.author}`)
+                        // Set permissions for elevated members
+                        for (role of voiceChan.guild.roles.cache) {
+                            if (config['elevated-roles'].includes(role[1].name)) {
+                                perms.push(
+                                    {
+                                        id: role[1],
+                                        allow: ['CONNECT', 'VIEW_CHANNEL']
+                                    }
+                                )
+                            }
+                        }
+                        
+
+                        // Apply changes
+                        voiceChan.overwritePermissions(perms).then(() => {
+                            message.reply("locked! Nobody new can join this voice channel (other than staff)")
+                            logger.log(`locked #${parent.name}`, `${message.author}`)
+                        });
+                    });
 
                 } else {
                     // You must be in the corresponding voice channel

@@ -43,41 +43,67 @@ module.exports = {
 
             // Create a category for the student picked topic
             if (args.length === 0) { args = ['Unnamed']; }
-            message.guild.channels.create(args.join(' ') + " " + config['sticky-chan-specifier'], {'type': 'category'}).then(category => {
+            message.guild.channels.create(args.join(' ') + " " + config['sticky-chan-specifier'], {
+                'type': 'category',
+                'permissionOverwrites': [
+                    {
+                        // Remove view permissions from everyone
+                        id: message.guild.roles.everyone,
+                        deny: ['VIEW_CHANNEL']
+                    },
+                    {
+                        // Set view for "welcome role"
+                        id: message.guild.roles.cache.get(config['role-welcome-code']),
+                        allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+
+                    }
+                ]
+            }).then(category => {
 
                 // Move cat above archive
                 category.setPosition(-1, {"relative": true});
 
-                // Remove view permissions from everyone
-                category.updateOverwrite(message.guild.roles.everyone, {
-                    VIEW_CHANNEL: false
-                });
-
-                // Set view for "welcome role"
-                category.updateOverwrite(message.guild.roles.cache.get(config['role-welcome-code']), {
-                    VIEW_CHANNEL: true,
-                    CONNECT: true,
-                    SPEAK: true
-                });
-
                 // Create text channel
-                message.guild.channels.create(args.join('-')).then(newTextChan => {
-                    newTextChan.setParent(category).then(() => {
-                        newTextChan.lockPermissions();
-                    });
+                message.guild.channels.create(args.join('-'), {
+                    'parent': category,
+                    'permissionOverwrites': [
+                        {
+                            // Remove view permissions from everyone
+                            id: message.guild.roles.everyone,
+                            deny: ['VIEW_CHANNEL']
+                        },
+                        {
+                            // Set view for "welcome role"
+                            id: message.guild.roles.cache.get(config['role-welcome-code']),
+                            allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+                            
+                        }
+                    ]
+                }).then(newTextChan => {
                     newTextChan.send(config["new-chatroom-msg"])
                     newTextChan.send("*Be sure to delete this room with `!end` when you are finished with it*")
-
+                    
                     message.reply(`we made your channel <#${newTextChan.id}>, click the link to join!`);
                 });
-
+                
                 // Create voice channel
-                message.guild.channels.create('Voice', {'type': 'voice'}).then(newVoiceChan => {
-                    newVoiceChan.setParent(category).then(() => {
-                        newTextChan.lockPermissions();
-                    });
+                message.guild.channels.create('Voice', {
+                    'type': 'voice',
+                    'parent': category,
+                    'permissionOverwrites': [
+                        {
+                            // Remove view permissions from everyone
+                            id: message.guild.roles.everyone,
+                            deny: ['VIEW_CHANNEL']
+                        },
+                        {
+                            // Set view for "welcome role"
+                            id: message.guild.roles.cache.get(config['role-welcome-code']),
+                            allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+    
+                        }
+                    ]
                 });
-
             });
             
             logger.log("PT channel Created (txt)", `${message.author}`)

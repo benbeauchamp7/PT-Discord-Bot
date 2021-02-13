@@ -436,8 +436,6 @@ process.on('SIGTERM', async () => {
     
     // Save queues to s3
     promises.push(save.uploadQueue());
-
-    console.log(promises);
     
     // Wait for all uploads to be done before exiting
     for (let i = 0; i < promises.length; i++) {
