@@ -257,7 +257,12 @@ async function prepareEmbed(msg, courses, combined, distro) {
         qTimeStr += parseTime(d) + '\n';
         
         // Conditions for compression
-        if (i+2 < combined.length && numDisplayed+2 < config['queue-list-amount'] && combined[i+1].ready === false && combined[i+2].ready === false) {
+        if (i+2 < combined.length && 
+            numDisplayed+2 < config['queue-list-amount'] && 
+            combined[i].ready === false && 
+            combined[i+1].ready === false && 
+            combined[i+2].ready === false) {
+                
             // Add ...s and a newline so everything is aligned
             qNameStr += "...\n";
             qClassStr += "\n";

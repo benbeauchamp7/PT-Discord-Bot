@@ -131,6 +131,22 @@ bot.on('ready', async () => {
     console.log('Bot Ready!');
     logger.log("Bot Ready", "none");
 
+    
+    // Initialize the queue map
+    for (course of config['course-channels']) {
+        queues.set(course, []);
+    }
+
+    // Test specific setup
+    if (config['testing']) {
+        queues = save.loadQueueLocalOnly();
+        
+        console.log('Queue loaded from local');
+        logger.log("Queue ready from local", "none");
+
+        return;
+    }
+    
     // Scan for student channels to begin inactivity timers
     for (const chan of bot.channels.cache) {
         // If student category
@@ -143,18 +159,12 @@ bot.on('ready', async () => {
             bot.commands.get('end').addArchiveInterval(chan[1], intervalMap);
         }
     }
-
-    // Initialize the queue map
-    for (course of config['course-channels']) {
-        queues.set(course, []);
-    }
-
     // Grab log file from s3 (if we had made one before)
     save.loadLog();
 
     // Loads queues from a saved file
     queues = await save.loadQueue();
-
+    
     console.log('Queue Ready!');
     logger.log("Queue Ready", "none");
 
@@ -425,6 +435,10 @@ process.on("SIGINT", () => {
 // Catch shutdown signal to close gracefully
 process.on('SIGTERM', async () => {
     logger.log("SIGTERM sent, shutdown requested", "#system");
+    if (config['testing']) {
+        logger.log("Testing is enabled, not saving", "#system");
+        process.exit(0);
+    }
 
     let promises = [];
 
