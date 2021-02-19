@@ -387,13 +387,17 @@ module.exports = {
         if (args.length > 0) {
 
             // VQ options
-            if (args[0][0] == '-') {
+            if (args[0][0] == '-' && args.length > 1) {
                 flags = args[0].split("");
                 args.splice(0, 1);
 
                 // Grab options from args
                 if (flags.indexOf("e") !== -1) { embedOptions['doExtend'] = true; }
                 if (flags.indexOf("c") !== -1) { embedOptions['doCompress'] = false; }
+            } else if (args[0][0] == '-') {
+                // Options provided but no target
+                replies.timedReply(msg, `no target was specified, usage \`!q [-{c|e|ce}] [@user] [into <course>] [at <position>\``, config['bot-alert-timeout']);
+                throw new CommandError("!vq options \`${args[0]}\` without target", `${msg.author}`);
             }
 
             if (args[0] == 'all') {
