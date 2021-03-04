@@ -354,16 +354,23 @@ process.on("SIGUSR1", () => {
     for (course of config['course-channels']) {
         queues.set(course, []);
     }
+
     
-    // Remove queued role from everyone (issue with cached users)
-    let queuedMembers = message.guild.roles.cache.get(config['role-q-code']).members;
-    for ([id, member] of queuedMembers) {
-        member.roles.remove(config['role-q-code'])
-    }
+    bot.channels.fetch(config['bot-channel-id']).then(chan => {
+        // Send a dummy message into the bot-channel as an anchor
+        chan.send('Clearing queue...').then(msg => {
+            // Remove queued role from everyone (issue with cached users)
+            let queuedMembers = msg.guild.roles.cache.get(config['role-q-code']).members;
+            for ([id, member] of queuedMembers) {
+                member.roles.remove(config['role-q-code'])
+            }
+            save.saveQueue(queues);
 
-    save.saveQueue(queues);
+            process.emit('SIGTERM');
+        });
+    });
 
-    process.emit('SIGTERM');
+
 });
 
 process.on("SIGINT", () => {
