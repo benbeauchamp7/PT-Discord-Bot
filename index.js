@@ -170,37 +170,6 @@ bot.on('ready', async () => {
 
 });
 
-// Fires on uncached reaction events for course enrollment (Carl-bot handles this part now)
-bot.on('raw', (packet) => {
-    // Only fire on message reactions
-    if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) { return; }
-    
-    // Grab the channel to check the message from
-    bot.channels.fetch(packet.d.channel_id).then(channel => {
-        // Quit if event is already cached
-        if (channel.messages.cache.find(e => e == packet.d.message_id)) { return; }
-        
-        // Fetch uncached channel
-        channel.messages.fetch(packet.d.message_id).then(message => {
-        
-            // Format the emoji
-            const emoji = `${packet.d.emoji.id}`;
-
-            // Grab the reaction object from the message
-            const reaction = message.reactions.cache.get(`${emoji}`);
-
-            // Emit the packet so the reaction event handler can grab it
-            bot.users.fetch(packet.d.user_id).then(user => {
-                if (packet.t === 'MESSAGE_REACTION_ADD') {
-                    bot.emit('messageReactionAdd', reaction, user);
-                } else if (packet.t === 'REMOVE') {
-                    bot.emit('messageReactionAdd', reaction, user);
-                }
-            });
-        });
-    }); 
-});
-
 bot.on('voiceStateUpdate', (oldMember, newMember) => {
     // Click to create room functionality
     const channelJoined = newMember.channelID;
@@ -372,65 +341,35 @@ bot.on('message', msg => {
     
 });
 
-// Catch reactions for role assignment (Carl-bot handles this part now)
-bot.on('messageReactionAdd', async (reaction, user) => {
-    if (reaction === undefined) {
-        logger.log(`reaction undefined`, `${user}`);
-        return;
-    } else if (user === undefined) {
-        logger.log(`user undefined`, `<@${reaction[1]}>`);
-        return;
-    }
-    
-    // Fetch the reaction if needed
-    if (reaction.partial) {
-        try { await reaction.fetch() }
-        catch (err) { console.log("Reaction fetch failed, ", err); return; }
-    }
-    
-    if (reaction.message.channel.name === "course-enrollment") {
-        reaction.message.guild.members.fetch(user.id).then(member => {
-            member.roles.add(config[`role-${reaction._emoji.name}-code`]);
-            logger.log(`role added`, `<@${user.id}>`);
-        });
-    }
-});
-
-// Catch reactions for role assignment (Carl-bot handles this part now)
-bot.on('messageReactionRemove', async (reaction, user) => {
-    if (reaction === undefined) {
-        logger.log(`reaction undefined`, `${user}`);
-        return;
-    } else if (user === undefined) {
-        logger.log(`user undefined`, `<@${reaction[1]}>`);
-        return;
-    }
-
-    // Fetch the reaction if needed
-    if (reaction.partial) {
-        try { await reaction.fetch() }
-        catch (err) { console.log("Reaction fetch failed, ", err); return; }
-    }
-
-    if (reaction.message.channel.name === "course-enrollment") {
-        reaction.message.guild.members.fetch(user.id).then(member => {
-            member.roles.remove(config[`role-${reaction._emoji.name}-code`]);
-            logger.log(`role removed`, `<@${user.id}>`);
-        });
-    }
-});
-
 // Create shutdown signal every 24 hours so that the bot reboots at night
-// Currently resets at hour 2
+// Currently resets at 2am
 schedule.scheduleJob('0 2 * * *', function() {
-    // Use SIGTERM here because that is heroku's shutdown warning signal
+    // Use SIGUSR1 to clear the queue
+    process.emit('SIGUSR1');
+});
+
+process.on("SIGUSR1", () => {
+    logger.log("SIGUSR1 sent, sending SIGTERM for shutdown and clearing queue", "#system");
+    // Reinitialize queues to be empty
+    for (course of config['course-channels']) {
+        queues.set(course, []);
+    }
+    
+    // Remove queued role from everyone (issue with cached users)
+    let queuedMembers = message.guild.roles.cache.get(config['role-q-code']).members;
+    for ([id, member] of queuedMembers) {
+        member.roles.remove(config['role-q-code'])
+    }
+
+    save.saveQueue(queues);
+
     process.emit('SIGTERM');
 });
 
 process.on("SIGINT", () => {
     logger.log("SIGINT sent, sending SIGTERM for shutdown", "#system");
     process.emit('SIGTERM');
-})
+});
 
 // Catch shutdown signal to close gracefully
 process.on('SIGTERM', async () => {
@@ -463,4 +402,4 @@ process.on('SIGTERM', async () => {
 
 });
 
-bot.login(process.env.BOT_TOKEN); // For cloud
+bot.login(process.env.BOT_TOKEN);
