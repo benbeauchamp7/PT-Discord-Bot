@@ -343,7 +343,7 @@ bot.on('message', msg => {
 
 // Create shutdown signal every 24 hours so that the bot reboots at night
 // Currently resets at 2am
-schedule.scheduleJob('0 2 * * *', function() {
+schedule.scheduleJob('0 7 * * *', function() {
     // Use SIGUSR1 to clear the queue
     process.emit('SIGUSR1');
 });
