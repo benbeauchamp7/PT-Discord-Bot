@@ -342,7 +342,7 @@ bot.on('message', msg => {
 });
 
 // Create shutdown signal every 24 hours so that the bot reboots at night
-// Currently resets at 2am
+// Currently resets at 7am
 schedule.scheduleJob('0 7 * * *', function() {
     // Use SIGUSR1 to clear the queue
     process.emit('SIGUSR1');
@@ -350,20 +350,13 @@ schedule.scheduleJob('0 7 * * *', function() {
 
 process.on("SIGUSR1", () => {
     logger.log("SIGUSR1 sent, sending SIGTERM for shutdown and clearing queue", "#system");
-    // Reinitialize queues to be empty
-    for (course of config['course-channels']) {
-        queues.set(course, []);
-    }
-
     
     bot.channels.fetch(config['bot-channel-id']).then(chan => {
         // Send a dummy message into the bot-channel as an anchor
         chan.send('Clearing queue...').then(msg => {
-            // Remove queued role from everyone (issue with cached users)
-            let queuedMembers = msg.guild.roles.cache.get(config['role-q-code']).members;
-            for ([id, member] of queuedMembers) {
-                member.roles.remove(config['role-q-code'])
-            }
+            // Clear out the queues
+            common.emptyQueues(msg.guild, queues, config);
+
             save.saveQueue(queues);
 
             process.emit('SIGTERM');

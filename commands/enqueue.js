@@ -4,6 +4,7 @@ const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const replies = require('../custom_modules/replies.js');
 const save = require('../custom_modules/save.js');
 const CommandError = require('../custom_modules/commandError.js');
+const common = require('../custom_modules/common.js')
 
 async function checkMention(mention, msg) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
@@ -50,8 +51,8 @@ module.exports = {
                     if (intoIndex + 1 >= args.length) {
                         replies.timedReply(msg, "keyword `into` requires an argument in the form `[121 | 221 | ... | 315 | mine | personal]`", config['bot-alert-timeout']);
                         throw new CommandError("!q into has no target", `${msg.author}`);
-                    } else if (config['emote-names'].includes(args[intoIndex + 1])) {
-                        qTarget = "csce-" + args[intoIndex + 1];
+                    } else if (config['course-emotes'].includes(args[intoIndex + 1])) {
+                        qTarget = common.parseEmoteToChannel(args[intoIndex + 1]);
                         qTargetPretty = qTarget;
                     } else if (config["personal-q-aliases"].includes(args[intoIndex + 1])) {
                         qTarget = `<@${msg.author.id}>`;
@@ -143,8 +144,10 @@ module.exports = {
         // Check to see if a course queue
         if (!qTarget.startsWith('<@')) {
             bot.channels.fetch(config['q-alert-id']).then(channel => {
-                const tag = `role-${qTarget.substring(5)}-code`;
-                channel.send(`<@&${config[tag]}>, <@${user.id}> has joined the ${qTarget} queue and requests the help of a peer teacher!`);
+                // Roles are same as channel name, but with CSCE capitalized
+                // const tag = `role-${qTarget.substring(5)}-code`;
+                const tag = channel.guild.roles.cache.find(role => role.name === `CSCE-${qTarget.substring(5)}`).id;
+                channel.send(`<@&${tag}>, <@${user.id}> has joined the ${qTarget} queue and needs *your* help!`);
             });
         }
 

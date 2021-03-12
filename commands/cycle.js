@@ -26,7 +26,7 @@ module.exports = {
             replies.timedReply(message, "the usage is `!cycle <course> <number>` which grabs the first 'number' students from a course queue, or `!cycle @user @user @user...` to add specific users to the cycle", 2*config["bot-alert-timeout"]);
             throw new CommandError("!cycle bad usage", `${message.author}`);
             
-        } else if (config['emote-names'].includes(args[0]) && Number(args[1]) != NaN) {
+        } else if (config['course-emotes'].includes(args[0]) && Number(args[1]) != NaN) {
             let courseQueue = queues.get('csce-' + args[0]);
 
             if (courseQueue.length == 0) {

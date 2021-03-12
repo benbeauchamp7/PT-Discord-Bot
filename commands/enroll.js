@@ -30,7 +30,7 @@ module.exports = {
             return;
         }
 
-        const emoteNames = config['emote-names']
+        const emoteNames = config['course-emotes']
         let emotes = [];
         let label = ""
         console.log(emoteNames)

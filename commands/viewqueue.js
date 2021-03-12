@@ -4,6 +4,7 @@ const fs = require("fs");
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const Discord = require('discord.js');
 const replies = require('../custom_modules/replies.js');
+const common = require('../custom_modules/common.js')
 
 function getPlace(rank) {
     switch (rank) {
@@ -150,11 +151,12 @@ function combineQueues(msg, args, queues) {
                 targetQueues.push(JSON.parse(JSON.stringify(queues.get(course))));
 
             } else {
-                targetQueues.push(JSON.parse(JSON.stringify(queues.get('csce-' + course))));
+                targetQueues.push(JSON.parse(JSON.stringify(queues.get(common.parseEmoteToChannel(course)))));
             }
 
         } catch (err) {
             replies.timedReply(msg, "Unrecognized course, please try again", config['bot-alert-timeout'])
+            console.log(err);
             throw new CommandError(`unrecognized course in "[${args}]"`, `${msg.author.id}`)
         }
         courses.push(course);
@@ -357,7 +359,7 @@ function getDistro(courses, queues) {
     // Gets the number of students from each class in the queue
     let distro = new Map();
     for (course of courses) {
-        let q = queues.get("csce-" + course);
+        let q = queues.get(common.parseEmoteToChannel(course));
 
         if (q != undefined) {
             distro.set(course, q.length);
@@ -402,7 +404,7 @@ module.exports = {
 
             if (args[0] == 'all') {
                 // Display all the courses
-                args = config['emote-names'];
+                args = config['course-emotes'];
 
             } else if (args[0].match(/^<@!?(\d+)>$/g) || args[0] == 'me') {
                 // Discern between mention protocol and course protocol
