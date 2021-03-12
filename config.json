@@ -1,9 +1,9 @@
 {
-    "prefix": "?",
+    "prefix": "!",
     "do-moderate-chat": true,
     "do-archive-deletions": true,
 
-    "testing": true,
+    "testing": false,
 
     "persistant-data-path": "PersistantData/",
     "queue-file-path": "PersistantData/queueSave.csv",
