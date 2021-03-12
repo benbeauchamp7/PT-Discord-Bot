@@ -251,6 +251,9 @@ async function prepareEmbed(msg, courses, combined, distro, options) {
     let i = 0;
     let numDisplayed = 0;
     for (i = 0; i < combined.length && numDisplayed < maxLen; i++, numDisplayed++) {
+
+        // Skip not ready people if we want to skip them
+        if (options['doSkipNr'] && combined[i].ready == false) { numDisplayed--; continue; }
         
         if (combined[i].ready === true || combined[i].ready === undefined) {
             qNameStr += `${i + 1}. ${await msg.guild.members.fetch(combined[i].user)}\n`   
@@ -383,7 +386,8 @@ module.exports = {
         
         let embedOptions = {
             'doCompress': true,
-            'doExtend': false
+            'doExtend': false,
+            'doSkipNr': false
         }
 
         if (args.length > 0) {
@@ -395,7 +399,8 @@ module.exports = {
 
                 // Grab options from args
                 if (flags.indexOf("e") !== -1) { embedOptions['doExtend'] = true; }
-                if (flags.indexOf("c") !== -1) { embedOptions['doCompress'] = false; }
+                if (flags.indexOf("h") !== -1) { embedOptions['doSkipNr'] = true; }
+                else if (flags.indexOf("c") !== -1) { embedOptions['doCompress'] = false; }
             } else if (args[0][0] == '-') {
                 // Options provided but no target
                 replies.timedReply(msg, `no target was specified, usage \`!q [-{c|e|ce}] [@user] [into <course>] [at <position>\``, config['bot-alert-timeout']);

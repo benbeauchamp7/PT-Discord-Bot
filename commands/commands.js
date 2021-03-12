@@ -30,9 +30,10 @@ module.exports = {
 **>** \`!nr\` marks a user as *not ready* in the queue.
 **X** \`@user ...\` specifies a user or users to unready. If none is provided, your user is chosen.`},
 
-{ name: "Viewing the Queue", value: `\`!vq [-{c|e|ce}] [<@PT> || <@student> || course numbers ... || all || me]\`
+{ name: "Viewing the Queue", value: `\`!vq [-{c|e|h|ce|he}] [<@PT> || <@student> || course numbers ... || all || me]\`
 **>** \`!vq\` displays the queue.
 **>** \`-c\`: prevent \`nr\` users from being compressed in queue output.
+**>** \`-h\`: hides \`nr\` users in the queue output.
 **>** \`-e\`: removes 10-person display limit.
 **>** \`@PT\` will display a peer teacher's queue based on their accepted courses.
 **>** \`@student\` will display a student's place in the queue.
