@@ -102,7 +102,7 @@ function getCoursesFromUser(userMention) {
     for (role of userMention.roles.cache) {
         role = role[1];
         if (role.name.startsWith("CSCE")) {
-            args.push(role.name.substr(role.name.length - 3)) // Gets the number from the role
+            args.push(common.parseRoleToEmote(role.name)) // Gets the number from the role
         }
     }
 
@@ -111,6 +111,8 @@ function getCoursesFromUser(userMention) {
         timedMessage(msg, `${mention} isn't registered for any classes (maybe they forgot to stop by <#737169678677311578>?)`, config['bot-alert-timeout'])
         throw new CommandError(`!vq ${mention} not registered`, `${msg.author}`);
     }
+
+    args.sort();
 
     return args;
 }

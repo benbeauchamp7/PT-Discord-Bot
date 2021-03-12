@@ -13,6 +13,15 @@ module.exports = {
         }
     },
 
+    parseRoleToEmote: function (roleName) {
+        // Scroll to first dividing character
+        let i = 0;
+        for (; i < roleName.length && roleName[i] != '-'; i++) {}
+        i++; // Skip the hyphen
+
+        return roleName.slice(i).replace(/-/g, '');
+    },
+
     emptyQueues: function (guild, queues, config) {
         // Reinitialize queues to be empty
         let users = [];
