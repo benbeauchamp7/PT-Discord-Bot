@@ -20,7 +20,7 @@ module.exports = {
 
         // Check for elevated user to allow args
         if (roleCheck(msg, config['elevated-roles']) && args.length !== 0) {
-            
+
             if (target.size == 0) {
                 replies.timedReply(msg, `your message \`${msg}\` contained no valid users, so nobody was readied`, config['bot-alert-timeout']);
                 throw new CommandError(`!r no valid users ${msg}`, `${msg.author}`);
@@ -50,17 +50,21 @@ module.exports = {
             for (let [course, list] of queues) {
                 for (let i = 0; i < list.length; i++) {
                     if (list[i].user === id) {
-    
-                        // Ready the user
-                        list[i].ready = true
 
-                        found = true
-    
+                        if (!list[i].ready) {
+                            list[i].readyTime = Date.now();
+                        }
+                        
+                        // Ready the user
+                        list[i].ready = true;
+
+                        found = true;
+
                         if (readySelf) {
                             // Only reading the one person, so we can end the function
                             logger.log(`!ready self`, `${msg.author}`)
-							msg.react('✅')
-							save.saveQueue(queues);
+                            msg.react('✅')
+                            save.saveQueue(queues);
                             return true;
                         } else {
                             // If multiple, record the information of the successful ready

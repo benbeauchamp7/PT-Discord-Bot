@@ -38,7 +38,7 @@ module.exports = {
                 let o = objList[i];
                 let rdyStr = o.ready || o.ready === undefined ? true : false
 
-                fs.appendFileSync(config['queue-file-path'], `${course},${o.user},${o.time.toString()},${rdyStr}\n`, (error) => {
+                fs.appendFileSync(config['queue-file-path'], `${course},${o.user},${o.time.toString()},${rdyStr},${o.readyTime.toString()}\n`, (error) => {
                     if (error) {
                         console.log(">> The file could not be opened <<");
                         logging.logError(error);
@@ -95,7 +95,12 @@ module.exports = {
                     queue.set(data[0], []);
                 }
 
-                queue.get(data[0]).push( {user: data[1], time: parseTime(data[2]), ready: data[3] === 'true' || data[3] === undefined ? true : false} );
+                queue.get(data[0]).push({
+                    user: data[1], 
+                    time: parseTime(data[2]), 
+                    ready: data[3] === 'true' || data[3] === undefined ? true : false,
+                    readyTime: data[4] === undefined ? 0 : data[4]
+                });
             });
         }
         return queue;
@@ -133,7 +138,12 @@ module.exports = {
                 }
 
                 // Populate the queue with the student
-                queue.get(data[0]).push( {user: data[1], time: parseTime(data[2]), ready: data[3] === 'true' || data[3] === undefined ? true : false} );
+                queue.get(data[0]).push({
+                    user: data[1], 
+                    time: parseTime(data[2]), 
+                    ready: data[3] === 'true' || data[3] === undefined ? true : false,
+                    readyTime: data[4] === undefined ? 0 : data[4]
+                });
             });
 
             return queue;

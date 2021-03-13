@@ -4,7 +4,7 @@ const fs = require("fs");
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const Discord = require('discord.js');
 const replies = require('../custom_modules/replies.js');
-const common = require('../custom_modules/common.js')
+const common = require('../custom_modules/common.js');
 
 function getPlace(rank) {
     switch (rank) {
@@ -21,18 +21,6 @@ function getPlace(rank) {
     }
 }
 
-function parseTime(timeDisplay) {
-    // Takes a time object and formats it nicely for output, or repeats back the string
-    if (isNaN(timeDisplay)) { return timeDisplay; }
-    let time = new Date(timeDisplay);
-
-    let amPm = (time.getHours() >= 12 ? 'PM' : 'AM');
-    let hrs = (time.getHours() > 12 ? time.getHours() - 12 : time.getHours());
-    hrs = (hrs == 0 ? 12 : hrs); // Makes midnight 12am instead of 0am
-    let mins = (time.getMinutes() > 9 ? time.getMinutes() : `0${time.getMinutes()}`)
-    return `${hrs}:${mins} ${amPm}`;
-}
-
 async function displayCurrChan(msg, qList) {
     let qNameStr = "";
     let qTimeStr = "";
@@ -45,7 +33,7 @@ async function displayCurrChan(msg, qList) {
             qNameStr += `~~${i + 1}. ${await msg.guild.members.fetch(qList[i].user)}~~\n`
         }
 
-        qTimeStr += parseTime(qList[i].time) + '\n';
+        qTimeStr += common.parseTime(qList[i].time) + '\n';
     }
 
     if (qList.length === 0) {
@@ -59,7 +47,7 @@ async function displayCurrChan(msg, qList) {
             .addFields(
                 { name: 'Status', value: 'Queue is Empty!'}
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())} & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`)
+            .setFooter(`Queue is valid as of ${common.parseTime(new Date())} & will expire at ${common.parseTime(new Date(Date.now() + config['vq-expire']))}`)
 
     } else {
         // For nonempty queues
@@ -72,7 +60,7 @@ async function displayCurrChan(msg, qList) {
                 { name: 'Student', value: qNameStr, inline: true },
                 { name: 'Queue Time', value: qTimeStr, inline: true }
             )
-            .setFooter(`Queue is valid as of ${parseTime(new Date())} & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`)
+            .setFooter(`Queue is valid as of ${common.parseTime(new Date())} & will expire at ${common.parseTime(new Date(Date.now() + config['vq-expire']))}`)
     }
 }
 
@@ -266,7 +254,7 @@ async function prepareEmbed(msg, courses, combined, distro, options) {
         
         qClassStr += `${combined[i].course}\n`;
     
-        qTimeStr += parseTime(combined[i].time) + '\n'
+        qTimeStr += common.parseTime(combined[i].time) + '\n'
         
         // Conditions for compression
         if (options['doCompress'] &&
@@ -300,7 +288,7 @@ async function prepareEmbed(msg, courses, combined, distro, options) {
         }
 
         qClassStr += `\n${last.course}\n`
-        qTimeStr += '\n' + parseTime(last.time) + '\n';
+        qTimeStr += '\n' + common.parseTime(last.time) + '\n';
     }
 
     // Format queue distributions
@@ -310,9 +298,9 @@ async function prepareEmbed(msg, courses, combined, distro, options) {
         distroStr += `\`${course}: ${amount}\`\n`
     }
     
-    let footerString = `Queue is valid as of ${parseTime(new Date())}`
+    let footerString = `Queue is valid as of ${common.parseTime(new Date())}`
     if (msg.channel.name !== "command-spam") {
-        footerString += ` & will expire at ${parseTime(new Date(Date.now() + config['vq-expire']))}`;
+        footerString += ` & will expire at ${common.parseTime(new Date(Date.now() + config['vq-expire']))}`;
     }
 
     const totalChars = qNameStr.length + qClassStr.length + qTimeStr.length + footerString.length;
@@ -450,11 +438,15 @@ module.exports = {
         }       
 
         msg.channel.send(deliverable).then(embed => {
+            // This code deletes the previous !vq with no args.
             if (args.length === 0) {
                 if (activeVQs.has(msg.channel.name)) {
                     for (msgToDelete of activeVQs.get(msg.channel.name)) {
-                        logger.log(`!vq previous in ${msg.channel.name} deleted`, `${msg.author}`)
-                        msgToDelete.delete();
+                        msgToDelete.delete().then(() => {
+                            logger.log(`!vq previous in ${msg.channel.name} deleted`, `${msg.author}`)
+                        }).catch(function() {
+                            logger.log(`!vq previous in ${msg.channel.name} not found`, `${msg.author}`)
+                        });
                     }
                 }
                 
