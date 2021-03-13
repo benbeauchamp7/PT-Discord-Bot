@@ -99,7 +99,7 @@ module.exports = {
                     user: data[1], 
                     time: parseTime(data[2]), 
                     ready: data[3] === 'true' || data[3] === undefined ? true : false,
-                    readyTime: data[4] === undefined ? 0 : data[4]
+                    readyTime: data[4] === undefined ? 0 : parseTime(data[4])
                 });
             });
         }
@@ -142,7 +142,7 @@ module.exports = {
                     user: data[1], 
                     time: parseTime(data[2]), 
                     ready: data[3] === 'true' || data[3] === undefined ? true : false,
-                    readyTime: data[4] === undefined ? 0 : data[4]
+                    readyTime: data[4] === undefined ? 0 : parseTime(data[4])
                 });
             });
 
