@@ -60,6 +60,9 @@ module.exports = {
                         } else if (unreadySelf) {
                             replies.timedReply(msg, `you cannot use \`!nr\` until ${common.parseTime(list[i].readyTime + config['nr-cooldown'])}`, config['bot-alert-timeout']);
                             throw new CommandError("!nr on cooldown", `${msg.author}`);
+                        } else if (target.size === 1) {
+                            replies.timedReply(msg, `<@${id}> cannot be marked as not ready until ${common.parseTime(list[i].readyTime + config['nr-cooldown'])}`, config['bot-alert-timeout']);
+                            throw new CommandError(`!nr <@${id}> on cooldown`, `${msg.author}`);
                         } else {
                             break;
                         }
