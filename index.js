@@ -382,6 +382,7 @@ process.on('SIGTERM', async () => {
     let promises = [];
 
     // Save logs to s3
+    logger.log("awaiting logs...", "#system");
     promises.push(await save.saveLogs());
 
     // Un-nest promises
