@@ -392,6 +392,7 @@ process.on('SIGTERM', async () => {
     
     // Wait for all uploads to be done before exiting
     for (let i = 0; i < promises.length; i++) {
+        logger.log("awaiting...", "#system");
         await promises[i];
     }
     
