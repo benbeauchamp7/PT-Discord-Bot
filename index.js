@@ -17,6 +17,7 @@ const logger = require('./custom_modules/logging.js');
 const save = require('./custom_modules/save.js');
 const replies = require('./custom_modules/replies.js');
 const CommandError = require('./custom_modules/commandError.js');
+const common = require('./custom_modules/common.js')
 
 // Banned word list sourced from http://www.bannedwordlist.com/lists/swearWords.txt
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
