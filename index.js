@@ -338,6 +338,10 @@ bot.on('message', msg => {
                 logger.log(`ERROR: base error thrown CONTENT:${msg.content} |||| CHAN:#${msg.channel.name}`, `${msg.author}`);
             }
         }
+    } else if (msg.content.toLowerCase() == 'good bot' || msg.content.toLowerCase() == 'good bot!') {
+        msg.channel.send('\:D')
+    } else if (msg.content.toLowerCase() == 'bad bot' || msg.content.toLowerCase() == 'bad bot!') {
+        msg.channel.send('\:\'(')
     }
     
 });
