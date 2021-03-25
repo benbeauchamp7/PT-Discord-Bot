@@ -4,6 +4,7 @@ const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const replies = require('../custom_modules/replies.js');
 const save = require('../custom_modules/save.js');
 const CommandError = require('../custom_modules/commandError.js');
+const common = require('../custom_modules/common.js');
 
 function roleCheck(msg, roles) {
     return msg.member.roles.cache.find(r => roles.includes(r.name))
@@ -51,10 +52,21 @@ module.exports = {
                 for (let i = 0; i < list.length; i++) {
                     if (list[i].user === id) {
     
+                        
                         // unReady the user
-                        list[i].ready = false
-
-                        found = true
+                        if (list[i].readyTime + config['nr-cooldown'] < Date.now()) {
+                            list[i].ready = false
+                            found = true;
+                        } else if (unreadySelf) {
+                            replies.timedReply(msg, `you cannot use \`!nr\` until ${common.parseTime(list[i].readyTime + config['nr-cooldown'])}`, config['bot-alert-timeout']);
+                            throw new CommandError("!nr on cooldown", `${msg.author}`);
+                        } else if (target.size === 1) {
+                            replies.timedReply(msg, `<@${id}> cannot be marked as not ready until ${common.parseTime(list[i].readyTime + config['nr-cooldown'])}`, config['bot-alert-timeout']);
+                            throw new CommandError(`!nr <@${id}> on cooldown`, `${msg.author}`);
+                        } else {
+                            break;
+                        }
+                        
     
                         if (unreadySelf) {
                             logger.log(`!unready self`, `${msg.author}`)
@@ -76,16 +88,16 @@ module.exports = {
             throw new CommandError(`!unready self not in queue`, `${msg.author}`);
         } else {
             if (found) {
-                logger.log(`!unready${unreadyString}`, `${msg.author}`)
+                logger.log(`!nr${unreadyString}`, `${msg.author}`)
                 if (target.size > 1) {
-                    msg.channel.send(`> We unreadied the following users\n${unreadyPrintString}`)
+                    msg.channel.send(`> The following users are now marked as not ready\n${unreadyPrintString}`)
                 } else {
                     msg.react('✅')
                 }
             } else {
-                logger.log(`!unready nobody from${unreadyAllIds}`, `${msg.author}`)
+                logger.log(`!nr nobody from${unreadyAllIds}`, `${msg.author}`)
                 if (target.size > 1) {
-                    replies.timedReply(msg, `none of${unreadyAllIds} were in a queue`, config['bot-alert-timeout']);
+                    replies.timedReply(msg, `none of${unreadyAllIds} could be un-readied`, config['bot-alert-timeout']);
                 } else {
                     replies.timedReply(msg, `${target.values().next().value} was not in a queue`, config['bot-alert-timeout']);
                 }

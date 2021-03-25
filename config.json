@@ -18,6 +18,8 @@
     "channel-create-cooldown": 120000,
     "vq-expire": 900000,
 
+    "nr-cooldown": 1800000,
+
     "elevated-roles": ["Peer Teacher", "Moderator", "Professor", "TA", "Off the Clock"],
     "admin-roles": ["Moderator"],
     "queue-list-amount": 10,
