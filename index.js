@@ -260,6 +260,26 @@ bot.on('channelDelete', chan => {
 bot.on('message', msg => {
     // Prevent recursion
     if (msg.author.bot) { return; }
+
+    if (msg.content.toLowerCase().includes('im') || msg.content.toLowerCase().includes('i\'m')) {
+        let substri = msg.content.toLowerCase().indexOf('im') + 3
+        if (substri === -1 + 3) { 
+            substri = msg.content.toLowerCase().indexOf('i\'m') + 4; 
+        }
+
+        const terminators = ['.', ',', ':', ';', '!', '\n']
+        let term = msg.content.substr(substri).length;
+        for (let i = 0; i < terminators.length; i++) {
+            let t = msg.content.substr(substri).indexOf(terminators[i])
+            if (term === -1 || (t !== -1 && t < term)) {
+                term = t
+            }
+        }
+        if (term === msg.content.substr(substri).length) { offset = 0; }
+        msg.channel.send(`Hi ${msg.content.substr(substri, term)}, I'm Dad`)
+        return
+    }
+
     
     // Message into words as args, grab first word as command
     const args = msg.content.slice(prefix.length).split(/ +/);
@@ -296,8 +316,17 @@ bot.on('message', msg => {
         }
     }
 
+    const dont = msg.content.toLowerCase().includes('dont') || msg.content.toLowerCase().includes('don\'t') || msg.content.toLowerCase().includes('do not')
+    if (msg.content.includes('<@!731651014993772578>') && msg.content.toLowerCase().includes('joke') && dont) {
+        msg.channel.send('okay, I won\'t');
+    } else if (msg.content.includes('<@!731651014993772578>') && msg.content.toLowerCase().includes('joke')) {
+        const jokes = config["dad-jokes"];
+        const selected = jokes[Math.floor(Math.random() * jokes.length)];
+        msg.channel.send(selected);
+    }
+
     // Command handler
-    if (msg.content.startsWith(prefix) && !badWordFound) {
+    else if (msg.content.startsWith(prefix) && !badWordFound) {
         try {
             // Just a conglomeration of stuff the commands might need to execute
             const options = {
