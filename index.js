@@ -276,7 +276,7 @@ bot.on('message', msg => {
             }
         }
         if (term === msg.content.substr(substri).length) { offset = 0; }
-        msg.channel.send(`Hi ${msg.content.substr(substri, term)}, I'm Dad`)
+        msg.channel.send(`Hi ${msg.content.substr(substri, term)}, I'm DadBot!`)
         return
     }
 
