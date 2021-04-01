@@ -268,7 +268,7 @@ bot.on('message', msg => {
             substri = msg.content.toLowerCase().indexOf('i\'m') + 4; 
         }
 
-        const terminators = ['.', ',', ':', ';', '!', '\n']
+        const terminators = ['.', ',', ':', ';', '!', '<', '@', '\n']
         let term = msg.content.substr(substri).length;
         for (let i = 0; i < terminators.length; i++) {
             let t = msg.content.substr(substri).indexOf(terminators[i])
