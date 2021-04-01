@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --trace-warnings index.js"
+    "start": "node --async-stack-traces index.js"
   },
   "author": "Benjamin Beauchamp",
   "license": "ISC",

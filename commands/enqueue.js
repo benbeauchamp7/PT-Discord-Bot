@@ -121,15 +121,15 @@ module.exports = {
         if (!queues.has(qTarget)) { queues.set(qTarget, []); }
 
         if (position === -1) { 
-            queues.get(course).push({user: user.id, time: Date.now(), ready: true});
+            queues.get(course).push({user: user.id, time: Date.now(), ready: true, readyTime: Date.now()});
         } else {
-            queues.get(course).splice(position-1, 0, {user: user.id, time: "Manual", ready: true})
+            queues.get(course).splice(position-1, 0, {user: user.id, time: "Manual", ready: true, readyTime: Date.now()});
         }
 
         // Give them the queued role
         msg.guild.members.fetch(user.id).then(user => {
             user.roles.add(config['role-q-code']);
-        })
+        });
 
         if (adminQ) {
             logger.log(`!q <@${user.id}> into ${course}`, `${msg.author}`);

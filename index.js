@@ -17,6 +17,7 @@ const logger = require('./custom_modules/logging.js');
 const save = require('./custom_modules/save.js');
 const replies = require('./custom_modules/replies.js');
 const CommandError = require('./custom_modules/commandError.js');
+const common = require('./custom_modules/common.js')
 
 // Banned word list sourced from http://www.bannedwordlist.com/lists/swearWords.txt
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
@@ -366,13 +367,17 @@ bot.on('message', msg => {
                 logger.log(`ERROR: base error thrown CONTENT:${msg.content} |||| CHAN:#${msg.channel.name}`, `${msg.author}`);
             }
         }
+    } else if (msg.content.toLowerCase() == 'good bot' || msg.content.toLowerCase() == 'good bot!') {
+        msg.channel.send('\:D')
+    } else if (msg.content.toLowerCase() == 'bad bot' || msg.content.toLowerCase() == 'bad bot!') {
+        msg.channel.send('\:\'(')
     }
     
 });
 
 // Create shutdown signal every 24 hours so that the bot reboots at night
-// Currently resets at 7am
-schedule.scheduleJob('0 7 * * *', function() {
+// Currently resets at 7:45am
+schedule.scheduleJob('45 7 * * *', function() {
     // Use SIGUSR1 to clear the queue
     process.emit('SIGUSR1');
 });
@@ -411,6 +416,7 @@ process.on('SIGTERM', async () => {
     let promises = [];
 
     // Save logs to s3
+    logger.log("awaiting logs...", "#system");
     promises.push(await save.saveLogs());
 
     // Un-nest promises
@@ -421,6 +427,7 @@ process.on('SIGTERM', async () => {
     
     // Wait for all uploads to be done before exiting
     for (let i = 0; i < promises.length; i++) {
+        logger.log("awaiting...", "#system");
         await promises[i];
     }
     
