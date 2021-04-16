@@ -52,7 +52,7 @@ module.exports = {
 
     // Just uploads the queue file to s3
     uploadQueue: async function() {
-        if (process.env.TESTING) {
+        if (process.env.TESTING == 'true') {
             logging.log("not uploading queue, in testing mode", "#system");
             return new Promise(() => { return [] })
         } else {

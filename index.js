@@ -139,7 +139,7 @@ bot.on('ready', async () => {
     }
 
     // Test specific setup
-    if (process.env.TESTING) {
+    if (process.env.TESTING == 'true') {
         queues = save.loadQueueLocalOnly();
         
         console.log('Queue loaded from local');
@@ -389,8 +389,8 @@ process.on("SIGINT", () => {
 process.on('SIGTERM', async () => {
     logger.log("SIGTERM sent, shutdown requested", "#system");
     clearInterval(saveTimer)
-    
-    if (process.env.TESTING) {
+
+    if (process.env.TESTING == 'true') {
         logger.log("Testing is enabled, not saving", "#system");
         process.exit(0);
     }
