@@ -23,7 +23,7 @@ const common = require('./custom_modules/common.js')
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const timeout = config['bot-alert-timeout'];
 const bannedChatWords = config['banned-chat-words'];
-const prefix = config['prefix'];
+const prefix = process.env.PREFIX
 const doModChat = config['do-moderate-chat'];
 const otherCommands = config['other-commands'];
 
@@ -139,7 +139,7 @@ bot.on('ready', async () => {
     }
 
     // Test specific setup
-    if (config['testing']) {
+    if (process.env.TESTING) {
         queues = save.loadQueueLocalOnly();
         
         console.log('Queue loaded from local');
@@ -353,6 +353,15 @@ schedule.scheduleJob('45 7 * * *', function() {
     process.emit('SIGUSR1');
 });
 
+// Save the queues every 15 minutes excluding midnight to 8am and saturdays
+let saveTimer = setInterval(() => {
+   let d = new Date();
+   if (d.getDay() == 6 || !(d.getHours() >= 8)) { return }
+
+   save.saveQueue(queues);
+   save.uploadQueue();
+}, 1000 * 60 * 15)
+
 process.on("SIGUSR1", () => {
     logger.log("SIGUSR1 sent, sending SIGTERM for shutdown and clearing queue", "#system");
     
@@ -379,7 +388,9 @@ process.on("SIGINT", () => {
 // Catch shutdown signal to close gracefully
 process.on('SIGTERM', async () => {
     logger.log("SIGTERM sent, shutdown requested", "#system");
-    if (config['testing']) {
+    clearInterval(saveTimer)
+    
+    if (process.env.TESTING) {
         logger.log("Testing is enabled, not saving", "#system");
         process.exit(0);
     }

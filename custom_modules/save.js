@@ -20,7 +20,7 @@ function parseTime(time) {
 
 module.exports = {
     // queue maps courses to {user, time} objects
-	saveQueue: function(queue) {
+	saveQueue: function(queue, noUpload) {
 
         // Clear the file
         fs.writeFileSync(config['queue-file-path'], '', (error) => {
@@ -52,7 +52,12 @@ module.exports = {
 
     // Just uploads the queue file to s3
     uploadQueue: async function() {
-        logging.log("uploading queue", "#system");
+        if (process.env.TESTING) {
+            logging.log("not uploading queue, in testing mode", "#system");
+            return new Promise(() => { return [] })
+        } else {
+            logging.log("uploading queue", "#system");
+        }
         
         const content = fs.readFileSync(config['queue-file-path']);
         const params = {
