@@ -23,7 +23,7 @@ module.exports = {
                 // Set a message collector to look for !confirm or !cancel
                 const collector = new Discord.MessageCollector(message.channel, reply => reply.author.id === message.author.id, {"time": 30000})
                 collector.on('collect', reply => {
-                    if (reply.content.toLowerCase() == config["prefix"] + "confirm") {
+                    if (reply.content.toLowerCase() == process.env.PREFIX + "confirm") {
     
                         // Reinitialize queues to be empty
                         common.emptyQueues(message.guild, queues, config);
@@ -58,7 +58,7 @@ module.exports = {
 
                         return true;
     
-                    } else if (reply.content.toLowerCase() == config["prefix"] + "cancel") {
+                    } else if (reply.content.toLowerCase() == process.env.PREFIX + "cancel") {
                         message.reply("command canceled").then(cancelMessage => {
     
                             // Deletion promises set to fail quietly in case the 30 second timeout deletes the messages first
