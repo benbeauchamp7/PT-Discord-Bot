@@ -68,7 +68,6 @@ module.exports = {
                             // We are only removing this user, so we exit the function here
                             logger.log(`!dq self from ${course}`, `${msg.author}`)
                             msg.react('✅')
-                            replies.timedReply(msg, "You're out of the queue. Before you go, we'd really appreciate it if you filled out our survey! https://forms.gle/qHHuCk1Prjwsj7GY8", 3600000)
                             save.saveQueue(queues);
                             return true;
                         } else {
