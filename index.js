@@ -356,11 +356,11 @@ schedule.scheduleJob('45 7 * * *', function() {
 // Save the queues every 15 minutes excluding midnight to 8am and saturdays
 let saveTimer = setInterval(() => {
    let d = new Date();
-   if (d.getDay() == 6 || !(d.getHours() >= 8)) { return }
+   if (d.getDay() == 6 || !(d.getHours() >= 8)) { return; }
 
    save.saveQueue(queues);
    save.uploadQueue();
-}, 1000 * 60 * 15)
+}, 1000 * 60 * 30)
 
 process.on("SIGUSR1", () => {
     logger.log("SIGUSR1 sent, sending SIGTERM for shutdown and clearing queue", "#system");
