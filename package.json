@@ -4,11 +4,15 @@
   "description": "Discord bot to manage the Peer Teacher Central discord server at Texas A&M University",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node --async-stack-traces index.js"
   },
   "author": "Benjamin Beauchamp",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^12.2.0"
+    "aws-sdk": "^2.829.0",
+    "discord.js": "^12.2.0",
+    "dotenv": "^8.2.0",
+    "node-schedule": "^2.0.0"
   }
 }

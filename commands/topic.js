@@ -1,7 +1,7 @@
 const fs = require('fs');
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const CommandError = require('../commandError.js');
+const CommandError = require('../custom_modules/commandError.js');
 
 module.exports = {
     name: 'topic',
@@ -12,16 +12,22 @@ module.exports = {
         const chan = message.channel;
 
         if (chan.parent.name.endsWith(config['student-chan-specifier'])) {
+            // Rename the temp room
 
             chan.parent.setName(args.join(' ') + " " + config['student-chan-specifier']);
-            chan.setName(args.join('-'));
+            chan.setName(args.join('-')).then(() => {
+                message.react('✅');
+            });
 
             return true;
 
         } else if (chan.parent.name.endsWith(config['sticky-chan-specifier'])) {
+            // Rename the sticky room
 
             chan.parent.setName(args.join(' ') + " " + config['sticky-chan-specifier']);
-            chan.setName(args.join('-'));
+            chan.setName(args.join('-')).then(() => {
+                message.react('✅');
+            });;
 
             return true;
 

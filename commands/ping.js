@@ -1,4 +1,4 @@
-const logger = require('../logging.js');
+// It just pings to be sure the bot is alive
 module.exports = {
     name: 'ping',
     description: 'basic ping command',

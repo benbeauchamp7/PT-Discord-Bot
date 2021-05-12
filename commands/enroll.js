@@ -1,16 +1,18 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 
+// Carl-bot handles the enrollment now
 module.exports = {
     name: 'enroll',
     description: 'creates the enrollment message for the roles channel',
     async execute(message, args, options) {
+        return false;
         const timeout = config['bot-alert-timeout'];
 
         // Only bot managers may use this command
-        if (!message.member.roles.cache.find(r => r.name === "Bot Manager")) {
-            message.reply(`Insufficent permissions`).then(reply => {
+        if (!message.member.roles.cache.find(r => r.name === "Moderator")) {
+            message.reply(`insufficient permissions`).then(reply => {
                 reply.delete({'timeout': timeout});
                 message.delete({'timeout': timeout});
             });
@@ -28,10 +30,12 @@ module.exports = {
             return;
         }
 
-        const emoteNames = config['emote-names']
+        const emoteNames = config['course-emotes']
         let emotes = [];
         let label = ""
+        console.log(emoteNames)
         for (emoji of message.guild.emojis.cache) {
+            console.log(emoji[1].name)
             if (emoteNames.includes(emoji[1].name)) {
                 emotes.push(emoji[1]);
             }
@@ -40,7 +44,7 @@ module.exports = {
         for (name of emoteNames) {
             label += name + "   ";
         }
-        message.channel.send(`Select your coursees by clicking on the buttons below\n**\`${label}\`**`).then(async enrollMsg => {
+        message.channel.send(`Select your courses by clicking on the buttons below\n**\`${label}\`**`).then(async enrollMsg => {
 
             emotes.sort((a, b) => {
                 if (a.name < b.name) { return -1; }

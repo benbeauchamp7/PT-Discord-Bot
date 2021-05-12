@@ -1,14 +1,14 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const replies = require('../replies.js');
-const CommandError = require('../commandError.js');
+const replies = require('../custom_modules/replies.js');
+const CommandError = require('../custom_modules/commandError.js');
 
-function getUserFromMention(msg, mention) {
+async function getUserFromMention(msg, mention) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
         // Return the id
         let userID = mention.replace(/[\\<>@#&!]/g, "");
-        return msg.guild.members.cache.get(userID);
+        return msg.guild.members.fetch(userID);
     }
 
     return undefined;
@@ -25,7 +25,7 @@ function getChanFromLink(msg, mention) {
         }
 
         for (const chan of parent.children) {
-            if (chan[1].type === 'voice') {
+            if (chan[1].name === 'Voice') {
                 return [chan[1], msg.guild.channels.cache.get(chanID)];
             }
         }
@@ -48,14 +48,14 @@ module.exports = {
 
         if (!message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
             replies.timedReply(message, "you do not have permission to use this command.", config["bot-alert-timeout"]);
-            throw new CommandError("!#move insufficent perms", `${message.author}`);
+            throw new CommandError("!#move insufficient perms", `${message.author}`);
 
         } else if (args === undefined || args.length < 2) {
             replies.timedReply(message, "the syntax is as follows: \`!move @user #text-channel\`", config["bot-alert-timeout"] * 3);
             throw new CommandError("!#move invalid syntax", `${message.author}`);
         }
 
-        let member = getUserFromMention(message, args[0]);
+        let member = await getUserFromMention(message, args[0]);
         let chans = getChanFromLink(message, args[1]);
 
         if (chans === undefined) {

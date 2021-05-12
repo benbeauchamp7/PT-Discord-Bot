@@ -1,8 +1,9 @@
 const fs = require('fs');
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const CommandError = require('../commandError.js');
+const CommandError = require('../custom_modules/commandError.js');
 
+// Just a room with creation permissions and a separate configuration for inactivity
 module.exports = {
     name: 'sticky',
     description: 'Makes a set of discussion channels',
@@ -14,7 +15,7 @@ module.exports = {
                 message.delete({'timeout': timeout});
             });
 
-            throw new CommandError("!sticky insufficent permissions", `${message.author}`);
+            throw new CommandError("!sticky insufficient permissions", `${message.author}`);
         }
 
         const timeout = config['bot-alert-timeout'];
@@ -42,24 +43,67 @@ module.exports = {
 
             // Create a category for the student picked topic
             if (args.length === 0) { args = ['Unnamed']; }
-            message.guild.channels.create(args.join(' ') + " " + config['sticky-chan-specifier'], {'type': 'category'}).then(category => {
+            message.guild.channels.create(args.join(' ') + " " + config['sticky-chan-specifier'], {
+                'type': 'category',
+                'permissionOverwrites': [
+                    {
+                        // Remove view permissions from everyone
+                        id: message.guild.roles.everyone,
+                        deny: ['VIEW_CHANNEL']
+                    },
+                    {
+                        // Set view for "welcome role"
+                        id: message.guild.roles.cache.get(config['role-welcome-code']),
+                        allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+
+                    }
+                ]
+            }).then(category => {
 
                 // Move cat above archive
                 category.setPosition(-1, {"relative": true});
 
                 // Create text channel
-                message.guild.channels.create(args.join('-')).then(newTextChan => {
-                    newTextChan.setParent(category);
+                message.guild.channels.create(args.join('-'), {
+                    'parent': category,
+                    'permissionOverwrites': [
+                        {
+                            // Remove view permissions from everyone
+                            id: message.guild.roles.everyone,
+                            deny: ['VIEW_CHANNEL']
+                        },
+                        {
+                            // Set view for "welcome role"
+                            id: message.guild.roles.cache.get(config['role-welcome-code']),
+                            allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+                            
+                        }
+                    ]
+                }).then(newTextChan => {
                     newTextChan.send(config["new-chatroom-msg"])
-
+                    newTextChan.send("*Be sure to delete this room with `!end` when you are finished with it*")
+                    
                     message.reply(`we made your channel <#${newTextChan.id}>, click the link to join!`);
                 });
-
+                
                 // Create voice channel
-                message.guild.channels.create('Voice', {'type': 'voice'}).then(newVoiceChan => {
-                    newVoiceChan.setParent(category);
+                message.guild.channels.create('Voice', {
+                    'type': 'voice',
+                    'parent': category,
+                    'permissionOverwrites': [
+                        {
+                            // Remove view permissions from everyone
+                            id: message.guild.roles.everyone,
+                            deny: ['VIEW_CHANNEL']
+                        },
+                        {
+                            // Set view for "welcome role"
+                            id: message.guild.roles.cache.get(config['role-welcome-code']),
+                            allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+    
+                        }
+                    ]
                 });
-
             });
             
             logger.log("PT channel Created (txt)", `${message.author}`)

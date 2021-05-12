@@ -1,8 +1,8 @@
 const Discord = require("discord.js");
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const CommandError = require('../commandError.js');
+const CommandError = require('../custom_modules/commandError.js');
 
 function clearChat(message) {
     // Creates a copy of the channel, then deletes the original
@@ -127,7 +127,7 @@ module.exports = {
 
             return true;
         } else {
-            message.reply("insufficent permissions.").then(reply => {
+            message.reply("insufficient permissions.").then(reply => {
                 reply.delete({"timeout": config['bot-alert-timeout']});
                 message.delete({"timeout": config['bot-alert-timeout']});
             });

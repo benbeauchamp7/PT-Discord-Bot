@@ -1,8 +1,8 @@
 const fs = require('fs');
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const replies = require('../replies.js');
-const CommandError = require('../commandError.js');
+const replies = require('../custom_modules/replies.js');
+const CommandError = require('../custom_modules/commandError.js');
 
 module.exports = {
     name: 'superlock',
@@ -20,37 +20,54 @@ module.exports = {
                 let voiceChan = message.member.voice.channel;
                 if (voiceChan !== null && voiceChan.parent === parent) {
                     voiceChan.lockPermissions().then(voiceChan => {
-                        
-                        // Remove all permissions from everyone
-                        voiceChan.updateOverwrite(voiceChan.guild.roles.everyone, {
-                            VIEW_CHANNEL: true,
-                            CONNECT: false,
-                            SPEAK: false
-                        });
+                        let perms = [];
 
+                        // Deny everyone of view
+                        perms.push(
+                            {
+                                id: message.guild.roles.everyone,
+                                deny: ['VIEW_CHANNEL']
+                            }
+                        )
+
+                        // Deny # welcome of connecting perms
+                        perms.push(
+                            {
+                                id: message.guild.roles.cache.get(config['role-welcome-code']),
+                                deny: ['CONNECT'],
+                                allow: ['VIEW_CHANNEL']
+                            }
+                        )
+                        
+                        
                         // Set permissions for all the occupant members
                         for (fella of voiceChan.members) {
-                            voiceChan.updateOverwrite(fella[1], {
-                                VIEW_CHANNEL: true,
-                                CONNECT: true,
-                                SPEAK: true
-                            });
+                            perms.push(
+                                {
+                                    id: fella[1],
+                                    allow: ['CONNECT', 'VIEW_CHANNEL']
+                                }
+                            )
                         }
 
                         // Set permissions for elevated members
-                        var i = 0;
                         for (role of voiceChan.guild.roles.cache) {
-                            if (role[1].name === "Moderator") {
-                                voiceChan.updateOverwrite(role[1], {
-                                    VIEW_CHANNEL: true,
-                                    CONNECT: true,
-                                    SPEAK: true
-                                });
+                            if (config['admin-roles'].includes(role[1].name)) {
+                                perms.push(
+                                    {
+                                        id: role[1],
+                                        allow: ['CONNECT', 'VIEW_CHANNEL']
+                                    }
+                                )
                             }
                         }
 
-                        message.reply("superlocked! Not even staff can join this channel (except for Mods)")
-                        logger.log(`superlocked #${parent.name}`, `${message.author}`)
+                        // Apply changes
+                        voiceChan.overwritePermissions(perms).then(() => {
+                            message.reply("superlocked! Not even staff can join this channel (except for Mods)");
+                            logger.log(`superlocked #${parent.name}`, `${message.author}`);
+                            
+                        });
                     });
 
                 } else {
@@ -66,9 +83,9 @@ module.exports = {
             }
 
         } else {
-            // Insufficent permissions
+            // insufficient permissions
             replies.timedReply(message, "you do not have permission to use this command", config['bot-alert-timeout']);
-            throw new CommandError("!superlock insufficent permissions", `${message.author}`);
+            throw new CommandError("!superlock insufficient permissions", `${message.author}`);
         }
 
 

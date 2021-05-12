@@ -1,14 +1,14 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const replies = require('../replies.js');
-const CommandError = require('../commandError.js');
+const replies = require('../custom_modules/replies.js');
+const CommandError = require('../custom_modules/commandError.js');
 
-function getUserFromMention(msg, mention) {
+async function getUserFromMention(msg, mention) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
         // Return the id
         let userID = mention.replace(/[\\<>@#&!]/g, "");
-        return msg.guild.members.cache.get(userID);
+        return msg.guild.members.fetch(userID);
     }
 
     return undefined;
@@ -28,13 +28,13 @@ module.exports = {
 
         if (!message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
             replies.timedReply(message, "you do not have permission to use this command.", config["bot-alert-timeout"]);
-            throw new CommandError("!#unmute insufficent perms", `${message.author}`);
+            throw new CommandError("!#unmute insufficient perms", `${message.author}`);
         } else if (args.length == 0) {
             replies.timedReply(message, "no user specified, use @ to mention a user", config["bot-alert-timeout"]);
             throw new CommandError("!#unmute no user specified", `${message.author}`);
         }
 
-        let member = getUserFromMention(message, args[0]);
+        let member = await getUserFromMention(message, args[0]);
 
         if (member === undefined) {
             replies.timedReply(message, "user not found, command failed", config["bot-alert-timeout"]);

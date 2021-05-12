@@ -1,4 +1,4 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const Discord = require("discord.js");
 
 module.exports = {
@@ -8,7 +8,7 @@ module.exports = {
 		if (!message.member.roles.cache.find(r => r.name === "Bot Manager")) { return false; }
 		
 		const welcome = new Discord.MessageEmbed()
-                .setColor('#0099ff')
+                .setColor('#500000')
                 .setTitle('Things to get started')
                 .addFields(
 					{ name: "Getting started", value: `Before starting, be sure you do a few things
@@ -18,14 +18,14 @@ module.exports = {
 • Feel free to message <@335481074236915712> with any questions, quality of life suggestions, or bug you've found and he'll try his best to get it sorted out.
 					`},
 					{ name: "Duties", value: `• Answer questions, provide resources, and check chatrooms to ask if students need help
-• Use the queue system to keep PT rotations ordered. After students have been helped, remove them from the queue using \`!dq @user\`. Your spceific queue can be accessed by \`!vq @yourself\` where yourself is your username. This can only be done after you have enrolled in your courses in the #course-enrollment channel.
-• When not working, use \`!offline\` in the teacher's lounge channel so that students know not to ask you questions. When comming back online, use \`!online\` to mark yourself as such.
-• When possible, pin homework assignments in their repsective channels. This can be done by any PT (don't abuse it) so that everyone has quick access to assignments when helping students. These pinned messages should be files, and can be removed shortly after their due date or when they become irrelevant.
+• Use the queue system to keep PT rotations ordered. After students have been helped, remove them from the queue using \`!dq @user\`. Your specific queue can be accessed by \`!vq @yourself\` where yourself is your username. This can only be done after you have enrolled in your courses in the #course-enrollment channel.
+• When not working, use \`!offline\` in the teacher's lounge channel so that students know not to ask you questions. When coming back online, use \`!online\` to mark yourself as such.
+• When possible, pin homework assignments in their respective channels. This can be done by any PT (don't abuse it) so that everyone has quick access to assignments when helping students. These pinned messages should be files, and can be removed shortly after their due date or when they become irrelevant.
 					`}
 				)
 		
 		const commands = new Discord.MessageEmbed()
-                .setColor('#0099ff')
+                .setColor('#500000')
                 .setTitle('Commands you can use')
                 .addFields(
 					{ name: "Queues", value: `\`!q\` & \`!enqueue\`
@@ -46,9 +46,9 @@ module.exports = {
 \n\`!topic [name]\`
 > When used in a temporary room, this command renames the room (in case of a topic change)
 \n\`!lock\`
-> When used in a temporary room, this command prevents students not in the cooresponding voice channel from joining. In other words, it locks everyone else out (staff may still join the room).
+> When used in a temporary room, this command prevents students not in the corresponding voice channel from joining. In other words, it locks everyone else out (staff may still join the room).
 \n\`!unlock\`
-> When used in a temporary room, this command allows anyone to join the cooresponding voice channel.
+> When used in a temporary room, this command allows anyone to join the corresponding voice channel.
 					`}
                 )
 

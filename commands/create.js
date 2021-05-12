@@ -1,7 +1,7 @@
 const fs = require('fs');
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const CommandError = require('../commandError.js');
+const CommandError = require('../custom_modules/commandError.js');
 
 module.exports = {
     name: 'create',
@@ -11,10 +11,8 @@ module.exports = {
         const isAuto = options.auto;
         const cooldown = options.cooldown;
         const timeout = config['bot-alert-timeout'];
-        const bannedTitleWords = config['banned-title-words']
         const chan = message.channel;
 
-        var badWordFound = false;
         if (chan.name == 'create-room' || chan.name == 'bot-channel') {
 
             // Don't let user create a channel if they are on cooldown
@@ -31,30 +29,79 @@ module.exports = {
 
             // Create a category for the student picked topic
             if (args.length === 0) { args = ['Unnamed']; }
-            message.guild.channels.create(args.join(' ') + " " + config['student-chan-specifier'], {'type': 'category'}).then(category => {
+            message.guild.channels.create(args.join(' ') + " " + config['student-chan-specifier'], {
+                'type': 'category',
+                'permissionOverwrites': [
+                    {
+                        // Remove view permissions from everyone
+                        id: message.guild.roles.everyone,
+                        deny: ['VIEW_CHANNEL']
+                    },
+                    {
+                        // Set view for "welcome role"
+                        id: message.guild.roles.cache.get(config['role-welcome-code']),
+                        allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+
+                    }
+                ]
+            }).then(category => {
 
                 // Move cat above archive
-                category.setPosition(-1, {"relative": true});
+                category.setPosition(-1, {"relative": true}).then((category) => {
+    
+                    // Create text channel
+                    message.guild.channels.create(args.join('-'), {
+                        'parent': category,
+                        'permissionOverwrites': [
+                            {
+                                // Remove view permissions from everyone
+                                id: message.guild.roles.everyone,
+                                deny: ['VIEW_CHANNEL']
+                            },
+                            {
+                                // Set view for "welcome role"
+                                id: message.guild.roles.cache.get(config['role-welcome-code']),
+                                allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+        
+                            }
+                        ]
+                    }).then(newTextChan => {
 
-                // Create text channel
-                message.guild.channels.create(args.join('-')).then(newTextChan => {
-                    newTextChan.setParent(category);
-                    newTextChan.send(config["new-chatroom-msg"])
-
-                    if (isAuto === undefined) {
-                        message.reply(`we made your channel <#${newTextChan.id}>, click the link to join!`);
-                    }
-                });
-
-                // Create voice channel
-                message.guild.channels.create('Voice', {'type': 'voice'}).then(newVoiceChan => {
-                    newVoiceChan.setParent(category);
-                    if (isAuto) {
-                        user.voice.setChannel(newVoiceChan.id);
-                    }
+                        newTextChan.send(config["new-chatroom-msg"])
+    
+                        if (isAuto === undefined) {
+                            message.reply(`we made your channel <#${newTextChan.id}>, click the link to join!`);
+                        }
+                    });
+    
+                    // Create voice channels
+                    message.guild.channels.create('Voice', {
+                        'type': 'voice',
+                        'parent': category,
+                        'permissionOverwrites': [
+                            {
+                                // Remove view permissions from everyone
+                                id: message.guild.roles.everyone,
+                                deny: ['VIEW_CHANNEL']
+                            },
+                            {
+                                // Set view for "welcome role"
+                                id: message.guild.roles.cache.get(config['role-welcome-code']),
+                                allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"]
+        
+                            }
+                        ]
+                    }).then(voiceChan => {
+    
+                        if (isAuto) {
+                            user.voice.setChannel(voiceChan.id);
+                        }
+    
+                    });
                 });
 
             });
+
             
             logger.log("Channel Created (txt)", `${message.author}`)
             return true;

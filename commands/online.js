@@ -1,7 +1,7 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const CommandError = require('../commandError.js');
+const CommandError = require('../custom_modules/commandError.js');
 
 module.exports = {
     name: 'online',
@@ -21,6 +21,6 @@ module.exports = {
             return true;
         }
 
-        throw new CommandError("!offline insufficent permission", `${message.author}`);
+        throw new CommandError("!offline insufficient permission", `${message.author}`);
     }
 }

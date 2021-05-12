@@ -10,71 +10,66 @@ function roleCheck(msg, roles) {
 }
 
 module.exports = {
-    name: 'dq',
-    description: 'puts a student into a queue',
+    name: 'r',
+    description: 'sets a person\'s queue status to not ready',
     async execute(msg, args, options) {
         let queues = options.queues;
 
-        // Target represents the user(s) to be dequeued 
         let target = new Map();
         target = msg.mentions.users;
 
         // Check for elevated user to allow args
         if (roleCheck(msg, config['elevated-roles']) && args.length !== 0) {
-            
+
             if (target.size == 0) {
-                replies.timedReply(msg, `your message \`${msg}\` contained no valid users, so nobody was dequeued`, config['bot-alert-timeout']);
-                throw new CommandError(`!dq no valid users ${msg}`, `${msg.author}`);
+                replies.timedReply(msg, `your message \`${msg}\` contained no valid users, so nobody was readied`, config['bot-alert-timeout']);
+                throw new CommandError(`!r no valid users ${msg}`, `${msg.author}`);
             }
 
         } else if (args.length !== 0) {
             replies.timedReply(msg, "you do not have permission to use arguments with this command", config['bot-alert-timeout']);
-            throw new CommandError("!dq insufficient permissions", `${msg.author}`);
+            throw new CommandError("!r insufficient permissions", `${msg.author}`);
         }
 
         // Find the users
-        let dqString = "";
-        let dqAllIds = "";
-        let dqCourses = "";
-        let dqPrintString = "";
-        let dqSelf = false;
+        let readyString = "";
+        let readyAllIds = "";
+        let readyPrintString = "";
+        let readySelf = false;
 
-        // DQ the user if they did not use any arguments
+        // Ready the user if they did not use any arguments
         if (target.size == 0) {
             target.set(`${msg.author.id}`, msg.author);
-            dqSelf = true;
+            readySelf = true;
         }
 
-        // Find the user inside the queue system
         let found = false
         for ([id, member] of target) {
-            dqAllIds += ` <@${id}>`
+            readyAllIds += ` <@${id}>`
 
             for (let [course, list] of queues) {
                 for (let i = 0; i < list.length; i++) {
                     if (list[i].user === id) {
-    
-                        // Take the user out of the queue
-                        list.splice(i, 1);
-    
-                        // Remove the queued role
-                        msg.guild.members.fetch(id).then(user => {
-                            user.roles.remove(config['role-q-code']);
-                        })
 
-                        found = true
-    
-                        if (dqSelf) {
-                            // We are only removing this user, so we exit the function here
-                            logger.log(`!dq self from ${course}`, `${msg.author}`)
+                        if (!list[i].ready) {
+                            list[i].readyTime = Date.now();
+                        }
+                        
+                        // Ready the user
+                        list[i].ready = true;
+
+                        found = true;
+
+                        if (readySelf) {
+                            // Only reading the one person, so we can end the function
+                            logger.log(`!ready self`, `${msg.author}`)
                             msg.react('✅')
                             save.saveQueue(queues);
                             return true;
                         } else {
-                            // Record the data of the removed member to output later
-                            dqString += ` ${member}`;
-                            dqCourses += ` ${course}`;
-                            dqPrintString += `${member}\n`
+                            // If multiple, record the information of the successful ready
+                            readyString += ` ${member}`;
+                            readyPrintString += `${member}\n`
                         }
                     }
                 }
@@ -82,22 +77,21 @@ module.exports = {
         }
 
         save.saveQueue(queues);
-        if (dqSelf) {
+        if (readySelf) {
             replies.timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
-            msg.react('❌')
-            throw new CommandError(`!dq self not in queue`, `${msg.author}`);
+            throw new CommandError(`!ready self not in queue`, `${msg.author}`);
         } else {
             if (found) {
-                logger.log(`!dq${dqString} from${dqCourses}`, `${msg.author}`)
+                logger.log(`!ready${readyString}`, `${msg.author}`)
                 if (target.size > 1) {
-                    msg.channel.send(`> We removed the following from the queue\n${dqPrintString}`)
+                    msg.channel.send(`> We readied the following users\n${readyPrintString}`)
                 } else {
                     msg.react('✅')
                 }
             } else {
-                logger.log(`!dq nobody from${dqAllIds}`, `${msg.author}`)
+                logger.log(`!ready nobody from${readyAllIds}`, `${msg.author}`)
                 if (target.size > 1) {
-                    replies.timedReply(msg, `none of${dqAllIds} were in a queue`, config['bot-alert-timeout']);
+                    replies.timedReply(msg, `none of${readyAllIds} were in a queue`, config['bot-alert-timeout']);
                 } else {
                     replies.timedReply(msg, `${target.values().next().value} was not in a queue`, config['bot-alert-timeout']);
                 }

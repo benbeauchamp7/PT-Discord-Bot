@@ -1,12 +1,15 @@
-const logger = require('../logging.js');
+const logger = require('../custom_modules/logging.js');
 const Discord = require('discord.js');
 const fs = require("fs");
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-const save = require("../save.js");
+const save = require("../custom_modules/save.js");
+const replies = require('../custom_modules/replies.js');
+const CommandError = require('../custom_modules/commandError.js');
+const common = require('../custom_modules/common.js');
 
 module.exports = {
     name: 'clearqueue',
-    description: 'basic ping command',
+    description: 'empties all the queues',
     async execute(message, args, options) {
         let queues = options.queues;
 
@@ -20,12 +23,10 @@ module.exports = {
                 // Set a message collector to look for !confirm or !cancel
                 const collector = new Discord.MessageCollector(message.channel, reply => reply.author.id === message.author.id, {"time": 30000})
                 collector.on('collect', reply => {
-                    if (reply.content.toLowerCase() == config["prefix"] + "confirm") {
+                    if (reply.content.toLowerCase() == process.env.PREFIX + "confirm") {
     
-                        // Reinitialize
-                        for (course of config['course-channels']) {
-                            queues.set(course, []);
-                        }
+                        // Reinitialize queues to be empty
+                        common.emptyQueues(message.guild, queues, config);
     
                         message.reply("confirmed!").then(recipt => {
     
@@ -43,13 +44,21 @@ module.exports = {
                             }
                             logger.log(`!clearq called`, `${message.author}`);
 
+                            // Remove queued role from everyone (issue with cached users)
+                            // let queuedMembers = message.guild.roles.cache.get(config['role-q-code']).members;
+                            // for ([id, member] of queuedMembers) {
+                            //     member.roles.remove(config['role-q-code'])
+                            // }
+
+                            
+
                             save.saveQueue(queues);
     
                         });
 
                         return true;
     
-                    } else if (reply.content.toLowerCase() == config["prefix"] + "cancel") {
+                    } else if (reply.content.toLowerCase() == process.env.PREFIX + "cancel") {
                         message.reply("command canceled").then(cancelMessage => {
     
                             // Deletion promises set to fail quietly in case the 30 second timeout deletes the messages first
@@ -64,6 +73,9 @@ module.exports = {
                     }
                 });
             });
+        } else {
+            replies.timedReply(message, "you do not have permission to use this command.", config["bot-alert-timeout"]);
+            throw new CommandError("!clearqueue insufficient perms", `${message.author}`);
         }
     }
 }
