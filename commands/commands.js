@@ -30,7 +30,7 @@ module.exports = {
 **>** \`!nr\` marks a user as *not ready* in the queue.
 **X** \`@user ...\` specifies a user or users to unready. If none is provided, your user is chosen.`},
 
-{ name: "Viewing the Queue", value: `\`!vq [-{c|e|h|ce|he}] [<@PT> || <@student> || course numbers ... || all || me]\`
+{ name: "Viewing the Queue", value: `\`!vq [-{c|e|h|ce|he}] [<@PT> || <@student> || course numbers ... || all || me [for <courses>]]\`
 **>** \`!vq\` displays the queue.
 **>** \`-c\`: prevent \`nr\` users from being compressed in queue output.
 **>** \`-h\`: hides \`nr\` users in the queue output.
@@ -39,6 +39,7 @@ module.exports = {
 **>** \`@student\` will display a student's place in the queue.
 **>** \`course numbers ...\` will display combined queue for all listed course numbers.
 **>** \`me\` is an alias for a self mention and will display \`@PT\` or \`@student\` based on the user's designation.
+**>** \`for\` will display the user's position based on a spliced queue. Valid with \`me\` or an @student mention.
 **>** \`all\` is an alias for all course numbers.
 `},
 

@@ -105,18 +105,32 @@ function getCoursesFromUser(userMention) {
     return args;
 }
 
-function getPlaceInLine(msg, queues, user) {
+function getPlaceInLine(msg, queues, user, args, spliced) {
     // Tell them the mentioned's spot in line
-    for (let [key, qList] of queues)
+    if (!spliced) {
+        for (let [key, qList] of queues) {
+            for (let i = 0; i < qList.length; i++) {
+                if (user.id === qList[i].user) {
+                    let position = getPlace(i + 1);
+                    
+                    msg.channel.send(`${user} is ${position} in the ${key} queue`);
+                    logger.log(`!vq ${user} in line`, `${msg.author}`)
+                    return true;
+                }
+            }
+        }
+    } else {
+        let qList = combineQueues(msg, args, queues);
         for (let i = 0; i < qList.length; i++) {
             if (user.id === qList[i].user) {
                 let position = getPlace(i + 1);
                 
-                msg.channel.send(`${user} is ${position} in the ${key} queue`);
+                msg.channel.send(`${user} is ${position} in the ${args.join(', ')} queue`);
                 logger.log(`!vq ${user} in line`, `${msg.author}`)
                 return true;
             }
         }
+    }
 
     // Person not found in the queues
     msg.channel.send(`${user} is not in line`);
@@ -415,7 +429,15 @@ module.exports = {
                     }
 
                 } else {
-                    return getPlaceInLine(msg, queues, mention);
+                    let forIndex = args.indexOf("for");
+                    let spliced = false;
+                    if (forIndex !== -1) {
+                        spliced = true;
+                        args = args.splice(forIndex + 1);
+                        if (args.includes('all')) { args = config['course-emotes'] }
+                    }
+
+                    return getPlaceInLine(msg, queues, mention, args, spliced);
                 }
 
             }
