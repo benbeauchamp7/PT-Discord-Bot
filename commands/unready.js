@@ -72,6 +72,8 @@ module.exports = {
                             logger.log(`!unready self`, `${msg.author}`)
 							msg.react('✅')
 							save.saveQueue(queues);
+                            options.updateQueues.val = true;
+
                             return true;
                         } else {
                             unreadyString += ` ${member}`;
@@ -83,6 +85,8 @@ module.exports = {
         }
 
         save.saveQueue(queues);
+        options.updateQueues.val = true;
+        
         if (unreadySelf) {
             replies.timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
             throw new CommandError(`!unready self not in queue`, `${msg.author}`);

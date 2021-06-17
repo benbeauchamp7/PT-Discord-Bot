@@ -65,6 +65,8 @@ module.exports = {
                             logger.log(`!ready self`, `${msg.author}`)
                             msg.react('✅')
                             save.saveQueue(queues);
+                            options.updateQueues.val = true;
+
                             return true;
                         } else {
                             // If multiple, record the information of the successful ready
@@ -77,6 +79,8 @@ module.exports = {
         }
 
         save.saveQueue(queues);
+        options.updateQueues.val = true;
+        
         if (readySelf) {
             replies.timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
             throw new CommandError(`!ready self not in queue`, `${msg.author}`);

@@ -20,7 +20,7 @@ function parseTime(time) {
 
 module.exports = {
     // queue maps courses to {user, time} objects
-	saveQueue: function(queue, noUpload) {
+	saveQueue: function(queue) {
 
         // Clear the file
         fs.writeFileSync(config['queue-file-path'], '', (error) => {

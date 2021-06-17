@@ -152,6 +152,7 @@ module.exports = {
         }
 
         save.saveQueue(queues);
+        options.updateQueues.val = true;
 
         return true;
     }

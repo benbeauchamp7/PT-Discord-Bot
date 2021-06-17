@@ -69,6 +69,7 @@ module.exports = {
                             logger.log(`!dq self from ${course}`, `${msg.author}`)
                             msg.react('✅')
                             save.saveQueue(queues);
+                            options.updateQueues.val = true;
                             return true;
                         } else {
                             // Record the data of the removed member to output later
@@ -82,6 +83,8 @@ module.exports = {
         }
 
         save.saveQueue(queues);
+        options.updateQueues.val = true;
+        
         if (dqSelf) {
             replies.timedReply(msg, "you were not in a queue (so no action is required)", config['bot-alert-timeout'])
             msg.react('❌')

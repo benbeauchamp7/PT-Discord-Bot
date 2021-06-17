@@ -24,6 +24,7 @@ module.exports = {
             if (queues.has(`<@${message.author.id}>`)) {
                 queues.set(`<@${message.author.id}>`, []);
                 save.saveQueue(queues);
+                options.updateQueues.val = true;
             }
 
             return true;

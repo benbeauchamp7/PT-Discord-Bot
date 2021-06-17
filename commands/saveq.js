@@ -8,6 +8,7 @@ module.exports = {
         let queues = options.queues;
 
         save.saveQueue(queues);
+        options.updateQueues.val = true;
 
         message.reply("queues saved!")
     }
