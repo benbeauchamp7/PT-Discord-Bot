@@ -66,7 +66,7 @@ module.exports = {
             }
 
             if (!(promptMap.has(args))) {
-                message.reply("invalid specifier, the clear command can be used with 'chat', 'student rooms' and 'archives' following the command.").then(confirmationMessage => {
+                message.reply("Invalid specifier, the clear command can be used with 'chat', 'student rooms' and 'archives' following the command.").then(confirmationMessage => {
                     confirmationMessage.delete({"timeout": config['bot-alert-timeout']});
                     message.delete({"timeout": config['bot-alert-timeout']});
                 });
@@ -76,8 +76,8 @@ module.exports = {
             message.reply(promptMap.get(args) + ", type !confirm to continue or !cancel to cancel. The command will cancel automatically if no response is detected in 30 seconds").then(confirmationMessage => {
 
                 // Both delete promises fail quietly in case !cancel deletes the messages first
-                confirmationMessage.delete({"timeout": 30000}).catch(() => {});
-                message.delete({"timeout": 30000}).catch(() => {});
+                setTimeout(() => { confirmationMessage.delete(); }, 30000)
+                setTimeout(() => { message.delete(); }, 30000)
 
                 // Set a message collector to look for !confirm or !cancel
                 const collector = new Discord.MessageCollector(message.channel, reply => reply.author.id === message.author.id, {"time": 30000})
@@ -96,15 +96,15 @@ module.exports = {
                                 break;
                         }
 
-                        message.reply("confirmed!").then(recipt => {
+                        message.reply("Confirmed!").then(recipt => {
 
                             // Deletion promises set to fail quietly in case the 30 second timeout deletes the messages first
                             try {
-                                reply.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                                message.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                                confirmationMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                                setTimeout(() => { reply.delete(); }, config['bot-alert-timeout'])
+                                setTimeout(() => { message.delete(); }, config['bot-alert-timeout'])
+                                setTimeout(() => { confirmationMessage.delete(); }, config['bot-alert-timeout'])
                                 if (recipt) {
-                                    recipt.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                                    setTimeout(() => { recipt.delete(); }, config['bot-alert-timeout'])
                                 }
                             } catch (err) {}
                         });
@@ -114,10 +114,10 @@ module.exports = {
                         message.reply("Command canceled").then(cancelMessage => {
 
                             // Deletion promises set to fail quietly in case the 30 second timeout deletes the messages first
-                            reply.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                            message.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                            confirmationMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
-                            cancelMessage.delete({"timeout": config['bot-alert-timeout']}).catch(() => {});
+                            setTimeout(() => { reply.delete(); }, config['bot-alert-timeout'])
+                            setTimeout(() => { message.delete(); }, config['bot-alert-timeout'])
+                            setTimeout(() => { confirmationMessage.delete(); }, config['bot-alert-timeout'])
+                            setTimeout(() => { cancelMessage.delete(); }, config['bot-alert-timeout'])
 
                         });
                         return false;  
@@ -127,7 +127,7 @@ module.exports = {
 
             return true;
         } else {
-            message.reply("insufficient permissions.").then(reply => {
+            message.reply("Insufficient permissions.").then(reply => {
                 reply.delete({"timeout": config['bot-alert-timeout']});
                 message.delete({"timeout": config['bot-alert-timeout']});
             });

@@ -52,8 +52,8 @@
     "course-emotes": ["110", "111", "121", "206", "221", "222", "312", "313", "313hnr", "314java", "314haskell", "315"],
 
     "chat-moderation-messages": [
-        "please use professional language",
-        "lets keep it classy in the chat"
+        "Please use professional language",
+        "Lets keep it classy in the chat"
     ],
     "banned-title-words": [
         "anal",

@@ -64,8 +64,8 @@ module.exports = {
                         
 
                         // Apply changes
-                        voiceChan.overwritePermissions(perms).then(() => {
-                            message.reply("locked! Nobody new can join this voice channel (other than staff)")
+                        voiceChan.permissionOverwrites.set(perms).then(() => {
+                            message.reply("Locked! Nobody new can join this voice channel (other than staff)")
                             logger.log(`locked #${parent.name}`, `${message.author}`)
                         });
                     });

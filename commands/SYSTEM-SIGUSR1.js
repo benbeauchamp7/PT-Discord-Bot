@@ -14,7 +14,7 @@ module.exports = {
             throw new CommandError("!$sigusr1 insufficient perms", `${message.author}`);
         }
 
-        message.reply("confirmed, SIGUSR1 emitted for shutdown");
+        message.reply("Confirmed, SIGUSR1 emitted for shutdown");
         logger.log("!$sigusr1 called", message.author.id);
         process.emit('SIGUSR1');
         

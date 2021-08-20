@@ -33,8 +33,8 @@ module.exports = {
 
         } else {
             message.reply(`You can only use this command in student-created discussion rooms`).then(reply => {
-                reply.delete({'timeout': timeout});
-                message.delete({'timeout': timeout});
+                setTimeout(() => { reply.delete(); }, timeout);
+                setTimeout(() => { message.delete(); }, timeout);
             });
             
             throw new CommandError("!topic wrong room", `${message.author}`);

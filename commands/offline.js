@@ -10,12 +10,12 @@ module.exports = {
     async execute(message, args, options) {
         let queues = options.queues;
         if (message.member.roles.cache.find(r => ["Off the Clock", "Peer Teacher", "Professor"].includes(r.name))) {
-            message.guild.member(message.author).roles.add("743870484898250753"); // Add off the clock
-            message.guild.member(message.author).roles.remove("731672600367071273"); // Remove PT
+            message.guild.members.fetch(message.author).then((user) => { user.roles.add("743870484898250753"); }); // Add off the clock
+            message.guild.members.fetch(message.author).then((user) => { user.roles.remove("731672600367071273"); }); // Remove PT
             
             message.channel.send(`Adios ${message.author}!`).then(reply => {
-                reply.delete({'timeout': config['bot-alert-timeout']});
-                message.delete({'timeout': config['bot-alert-timeout']});
+                setTimeout(() => { reply.delete(); }, config['bot-alert-timeout']);
+                setTimeout(() => { message.delete(); }, config['bot-alert-timeout']);
             });
 
             logger.log("!offline", `${message.author}`);

@@ -5,7 +5,7 @@ module.exports = {
     name: 'ptinfo',
     description: 'Displays the pt welcome message',
     async execute(message) {
-		if (!message.member.roles.cache.find(r => r.name === "Bot Manager")) { return false; }
+		if (!message.member.roles.cache.find(r => r.name === "Moderator")) { return false; }
 		
 		const welcome = new Discord.MessageEmbed()
                 .setColor('#500000')
@@ -52,8 +52,8 @@ module.exports = {
 					`}
                 )
 
-        message.channel.send(welcome).then(() => {
-			message.channel.send(commands);
+        message.channel.send({embeds: [welcome]}).then(() => {
+			message.channel.send({embeds: [commands]});
 		});
 
         return true;

@@ -1,6 +1,6 @@
 // Require discord dependency and create the 'bot' object
 const Discord = require('discord.js');
-const bot = new Discord.Client({ partials: ['REACTION']});
+const bot = new Discord.Client({ partials: ['REACTION'], intents: 641 });
 
 const fs = require('fs');
 
@@ -59,7 +59,7 @@ function addChanInterval(categoryChannel) {
     warnMap.set(categoryChannel.id, null);
 
     // Create timer and store in intervalMap, accessible by the channelID
-    const intervalID = bot.setInterval(checkChanTimeout, config['room-inactivity-update'], categoryChannel);
+    const intervalID = setInterval(checkChanTimeout, config['room-inactivity-update'], categoryChannel);
     intervalMap.set(categoryChannel.id, intervalID);
 
     logger.log(`Timer added`, `#${categoryChannel.name}`);
@@ -255,13 +255,13 @@ bot.on('channelDelete', chan => {
         console.log(`Timer deleted from "#${chan.name}"`)
         logger.log("timer deleted", `#${chan.name}`)
 
-        bot.clearInterval(intervalMap.get(chan.id));
+        clearInterval(intervalMap.get(chan.id));
         intervalMap.delete(chan.id);
     }
 });
 
 // Handle message commands
-bot.on('message', msg => {
+bot.on('messageCreate', msg => {
     // Prevent recursion
     if (msg.author.bot) { return; }
     
@@ -287,8 +287,8 @@ bot.on('message', msg => {
                     const selected = modReplies[Math.floor(Math.random() * modReplies.length)];
 
                     msg.reply(selected).then(reply => {
-                        reply.delete({'timeout': timeout});
-                        msg.delete({'timeout': 0});
+                        setTimeout(() => { reply.delete(); }, timeout);
+                        setTimeout(() => { msg.delete(); }, 0);
                     });
 
                     console.log(`blocked ${msg.content}`, `${msg.author}`);
@@ -425,6 +425,10 @@ process.on('SIGTERM', async () => {
     // Exit
     process.exit(0);
 
+});
+
+process.on('unhandledRejection', error => {
+    console.log('Unhandled promise rejection', error);
 });
 
 bot.login(process.env.BOT_TOKEN);

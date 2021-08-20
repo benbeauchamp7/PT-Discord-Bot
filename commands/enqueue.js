@@ -134,11 +134,11 @@ module.exports = {
         if (adminQ) {
             logger.log(`!q <@${user.id}> into ${course}`, `${msg.author}`);
             msg.react('✅')
-            // msg.reply(`we queued ${msg.guild.members.cache.get(user.id)} into ${qTargetPretty}, they're ${position} in line`);
+            // msg.reply(`We queued ${msg.guild.members.cache.get(user.id)} into ${qTargetPretty}, they're ${position} in line`);
         } else {
             logger.log(`!q self into ${course}`, `${msg.author}`)
             msg.react('✅')
-            // msg.reply(`queued! You're ${position} in line`);
+            // msg.reply(`Queued! You're ${position} in line`);
         }
 
         // Check to see if a course queue

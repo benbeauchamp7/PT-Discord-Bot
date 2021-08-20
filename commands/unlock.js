@@ -21,7 +21,7 @@ module.exports = {
                 if (voiceChan !== null && voiceChan.parent === parent) {
                     // Add back all permissions
                     voiceChan.lockPermissions().then(() => {
-                        message.reply("we've unlocked the channel, anyone can join now!");
+                        message.reply("We've unlocked the channel, anyone can join now!");
                         logger.log(`unlocked #${parent.name}`, `${message.author}`)
 
                     });

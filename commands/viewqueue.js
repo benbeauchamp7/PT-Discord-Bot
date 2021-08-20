@@ -459,27 +459,31 @@ module.exports = {
             
         }       
 
-        msg.channel.send(deliverable).then(embed => {
-            // This code deletes the previous !vq with no args.
-            if (args.length === 0) {
-                if (activeVQs.has(msg.channel.name)) {
-                    for (msgToDelete of activeVQs.get(msg.channel.name)) {
-                        msgToDelete.delete().then(() => {
-                            logger.log(`!vq previous in ${msg.channel.name} deleted`, `${msg.author}`)
-                        }).catch(function() {
-                            logger.log(`!vq previous in ${msg.channel.name} not found`, `${msg.author}`)
-                        });
+        if (typeof deliverable !== 'string' && !(deliverable instanceof String)) {
+            msg.channel.send({embeds: [deliverable]}).then(embed => {
+                // This code deletes the previous !vq with no args.
+                if (args.length === 0) {
+                    if (activeVQs.has(msg.channel.name)) {
+                        for (msgToDelete of activeVQs.get(msg.channel.name)) {
+                            msgToDelete.delete().then(() => {
+                                logger.log(`!vq previous in ${msg.channel.name} deleted`, `${msg.author}`)
+                            }).catch(function() {
+                                logger.log(`!vq previous in ${msg.channel.name} not found`, `${msg.author}`)
+                            });
+                        }
                     }
+                    
+                    activeVQs.set(msg.channel.name, [msg, embed]);
                 }
-                
-                activeVQs.set(msg.channel.name, [msg, embed]);
-            }
 
-            if (msg.channel.name !== "command-spam") {
-                embed.delete({'timeout': config['vq-expire']});
-                msg.delete({'timeout': config['vq-expire']});
-            }
-        });
+                if (msg.channel.name !== "command-spam") {
+                    setTimeout(() => { embed.delete(); }, config['vq-expire']);
+                    setTimeout(() => { msg.delete(); }, config['vq-expire']);
+                }
+            });
+        } else {
+            msg.channel.send(deliverable);
+        }
 
         return true;
     }

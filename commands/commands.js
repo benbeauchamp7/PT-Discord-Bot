@@ -98,9 +98,9 @@ module.exports = {
                 )
                 .setFooter("This embed will disappear in 5 minutes");;
 
-        message.channel.send(commands).then(reply => {
-            reply.delete({'timeout': 300000});
-            message.delete({'timeout': 300000});
+        message.channel.send({embeds: [commands]}).then(reply => {
+            setTimeout(() => { reply.delete(); }, 5*60*1000);
+            setTimeout(() => { message.delete(); }, 5*60*1000);
         });
 
         return true;

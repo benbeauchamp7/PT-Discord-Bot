@@ -14,7 +14,7 @@ module.exports = {
             throw new CommandError("!$reboot insufficient perms", `${message.author}`);
         }
 
-        message.reply("confirmed, SIGTERM emitted for shutdown");
+        message.reply("Confirmed, SIGTERM emitted for shutdown");
         logger.log("!$reboot called", message.author.id);
         process.emit('SIGTERM');
         

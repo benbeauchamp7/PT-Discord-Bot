@@ -42,9 +42,9 @@ module.exports = {
             // End command for non-elevated users
             if (chan.name.endsWith(config['sticky-chan-specifier']) && !msg.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
                 
-                message.reply(`you do not have permission to end a PT room`).then(reply => {
-                    reply.delete({'timeout': timeout});
-                    message.delete({'timeout': timeout});
+                message.reply(`You do not have permission to end a PT room`).then(reply => {
+                    setTimeout(() => { reply.delete(); }, timeout);
+                    setTimeout(() => { message.delete(); }, timeout);
                 });
 
                 throw new CommandError("PT !end failed (insufficient perms)", `${message.author}`);
@@ -72,7 +72,7 @@ module.exports = {
             // Remove the category last (if the promise is defined)
             if (movePromise === undefined) {
                 logger.log("deleted immediately", `${chan.name}`);
-                message.guild.channels.resolve(message.guild.channels.resolveID(parentID)).delete();
+                message.guild.channels.resolve(message.guild.channels.resolveId(parentID)).delete();
                 return true;
             }
 
@@ -81,15 +81,15 @@ module.exports = {
             
             // This is disgusting, but I need to delete the channel by ID and this is how it's done
             logger.log("archived", `${chan.name}`);
-            message.guild.channels.resolve(message.guild.channels.resolveID(parentID)).delete();
+            message.guild.channels.resolve(message.guild.channels.resolveId(parentID)).delete();
             
 
             return true;
             
         } else {
             message.reply(`You can only use this command in student-created discussion rooms`).then(reply => {
-                reply.delete({'timeout': timeout});
-                message.delete({'timeout': timeout});
+                setTimeout(() => { reply.delete(); }, timeout);
+                setTimeout(() => { message.delete(); }, timeout);
             });
 
             throw new CommandError("!end wrong room", `${message.author}`);

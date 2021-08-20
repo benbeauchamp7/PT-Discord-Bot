@@ -12,9 +12,9 @@ module.exports = {
 
         // Only bot managers may use this command
         if (!message.member.roles.cache.find(r => r.name === "Moderator")) {
-            message.reply(`insufficient permissions`).then(reply => {
-                reply.delete({'timeout': timeout});
-                message.delete({'timeout': timeout});
+            message.reply(`Insufficient permissions`).then(reply => {
+                setTimeout(() => { reply.delete(); }, timeout);
+                setTimeout(() => { message.delete(); }, timeout);
             });
             logger.log("!enroll insufficient permissions", `${message.author}`)
             return;
@@ -23,8 +23,8 @@ module.exports = {
         // This command can only be used in specific channels
         if (message.channel.name != 'course-enrollment') {
             message.reply(`You cannot use this command here`).then(reply => {
-                reply.delete({'timeout': timeout});
-                message.delete({'timeout': timeout});
+                setTimeout(() => { reply.delete(); }, timeout);
+                setTimeout(() => { message.delete(); }, timeout);
             });
             logger.log("!enroll wrong room", `${message.author}`)
             return;
