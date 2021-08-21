@@ -6,6 +6,8 @@ const Discord = require('discord.js');
 const replies = require('../custom_modules/replies.js');
 const common = require('../custom_modules/common.js');
 
+const { SlashCommandBuilder } = require('@discordjs/builders');
+
 function getPlace(rank) {
     switch (rank) {
         case 1:  return "**first**";
@@ -21,7 +23,7 @@ function getPlace(rank) {
     }
 }
 
-async function displayCurrChan(msg, qList) {
+async function displayCurrChan(msg, qList) { // Not used by slash command
     let qNameStr = "";
     let qTimeStr = "";
 
@@ -43,7 +45,8 @@ async function displayCurrChan(msg, qList) {
 
         return new Discord.MessageEmbed()
             .setColor('#500000')
-            .setTitle(`Queue order of ${msg.channel.name.slice(5)}`)
+            .setTitle(`Course queue`)
+            .setDescription(`Queue of ${msg.channel.name.slice(5)}`)
             .addFields(
                 { name: 'Status', value: 'Queue is Empty!'}
             )
@@ -55,7 +58,8 @@ async function displayCurrChan(msg, qList) {
 
         return new Discord.MessageEmbed()
             .setColor('#500000')
-            .setTitle(`Queue order of ${msg.channel.name.slice(5)}`)
+            .setTitle(`Course queue`)
+            .setDescription(`Queue of ${msg.channel.name.slice(5)}`)
             .addFields(
                 { name: 'Student', value: qNameStr, inline: true },
                 { name: 'Queue Time', value: qTimeStr, inline: true }
@@ -64,7 +68,7 @@ async function displayCurrChan(msg, qList) {
     }
 }
 
-async function getTarget(msg, mention) {
+async function getTarget(msg, mention) { /// Not used for slash commands
 
     // Check for valid mention and for mentioned user's roles if mention
     let mentionUser = undefined;
@@ -84,7 +88,7 @@ async function getTarget(msg, mention) {
     return mentionUser;
 }
 
-function getCoursesFromUser(userMention) {
+function getCoursesFromUser(userMention) { /// Not used for slash commands
     // Should print the queue using the peer teacher's classes
     let args = [];
     for (role of userMention.roles.cache) {
@@ -105,7 +109,7 @@ function getCoursesFromUser(userMention) {
     return args;
 }
 
-function getPlaceInLine(msg, queues, user, args, spliced) {
+function getPlaceInLine(msg, queues, user, args, spliced) { /// Not used for slash commands
     // Tell them the mentioned's spot in line
     if (!spliced) {
         for (let [key, qList] of queues) {
@@ -137,7 +141,49 @@ function getPlaceInLine(msg, queues, user, args, spliced) {
     throw new CommandError(`!vq ${user} not in line`, `${msg.author}`);
 }
 
-function combineQueues(msg, args, queues) {
+function combineQueuesInteraction(queues, courses) {
+    let targetQueues = [];
+    for (const course of courses) {
+        targetQueues.push(JSON.parse(JSON.stringify(queues.get(common.parseEmoteToChannel(course)))));
+    }
+
+    let combined = [];
+    let nonemptyQueues = targetQueues.length;
+    while (nonemptyQueues > 0) {
+        let min = null;
+        let minIndex = null;
+        nonemptyQueues = targetQueues.length;
+
+        // Pick user with earliest time from available queues
+        for (let c = 0; c < courses.length; c++) {
+            // Skip empty queues
+            if (targetQueues[c].length === 0) { nonemptyQueues -= 1; continue; }
+
+            // Update the min if needed
+            if (min === null || typeof targetQueues[c] === 'string' || targetQueues[c][0].time < min) {
+                min = targetQueues[c][0].time;
+                minIndex = c;
+            }
+        }
+
+        // Add the valid user to the combined queue if we found one
+        if (minIndex != null) {
+            combined.push({
+                user: targetQueues[minIndex][0].user, 
+                course: courses[minIndex], 
+                time: targetQueues[minIndex][0].time,
+                ready: targetQueues[minIndex][0].ready
+            });
+
+            targetQueues[minIndex].shift();
+        }
+    }
+
+    return combined;
+
+}
+
+function combineQueues(msg, args, queues) { /// Not used for slash commands
     // Combines specified queues together such that they are all sorted by time regardless of class
     let courses = [];
     let targetQueues = [];
@@ -216,7 +262,121 @@ function combineQueues(msg, args, queues) {
     return combined;
 }
 
-async function prepareEmbed(msg, courses, combined, distro, options) {
+async function prepareEmbedInteraction(interaction, qargs, combined, queues, subject) {
+    const courses = qargs['courses'];
+    let maxLen = config['queue-list-amount'];
+    if (qargs['doExtend']) { maxLen = combined.length }
+
+    // Format course header
+    let courseStr = courses[0];
+    for (let i = 1; i < courses.length - 1; i++) { courseStr += ', ' + courses[i] }
+    if (courses.length > 1) { courseStr += ' and ' + courses[courses.length - 1]; }
+
+    const title = (subject)? `${subject.nickname}'s queue` : 'Course queue'
+    const description = `For ${courseStr}`
+
+    // Format queue order
+    let qNameStr = qClassStr = qTimeStr = "";
+    let i = numDisplayed = 0;
+    for (i = 0; i < combined.length && numDisplayed < maxLen; i++, numDisplayed++) {
+        // Skip nr if specified
+        if (qargs['doSkipNr'] && !combined[i].ready) { numDisplayed--; continue; }
+
+        // Format embed column bodies
+        if (combined[i].ready) { qNameStr += `${i + 1}. ${await interaction.guild.members.fetch(combined[i].user)}\n`; }
+        else { qNameStr += `~~${i + 1}. ${await interaction.guild.members.fetch(combined[i].user)}~~\n`; }
+        qClassStr += `${combined[i].course}\n`;
+        qTimeStr += `${common.parseTime(combined[i].time)}\n`
+
+        // Conditions for compression
+        if (qargs['doCompress'] &&
+            i+2 < combined.length && 
+            numDisplayed+2 < maxLen && 
+            combined[i].ready === false && 
+            combined[i+1].ready === false && 
+            combined[i+2].ready === false) {
+
+            // Add ...s and a newline so everything is aligned
+            qNameStr += "...\n";
+            qClassStr += "\n";
+            qTimeStr += "\n";
+            numDisplayed++;
+
+            // Seek passed groups of nr people (looking ahead so we include the last fella)
+            for (; i+2 < combined.length && i+2 < maxLen && combined[i+2].ready === false; i++) {}
+        }
+    }
+
+    // Check if whole queue isn't displayed
+    if (i < combined.length) {
+        let last = combined[combined.length - 1];
+        if (last.ready) { qNameStr += `...\n${combined.length}. ${await interaction.guild.members.fetch(combined[i].user)}\n`; } 
+        else { qNameStr += `...\n~~${combined.length}. ${await interaction.guild.members.fetch(combined[i].user)}~~\n`; }
+        qClassStr += `\n${last.course}\n`
+        qTimeStr += `\n${common.parseTime(last.time)}\n`;
+    }
+
+    // Format queue distributions
+    let distroStr = "";
+    for (let [course, amount] of getDistro(courses, queues)) {
+        if (amount === 0) { continue; }
+        distroStr += `\`${course}: ${amount}\`\n`;
+    }
+
+    // Footer
+    let footerString = `Queue is valid as of ${common.parseTime(new Date())}`
+    if (interaction.channel.name !== "command-spam") {
+        footerString += ` & will expire at ${common.parseTime(new Date(Date.now() + config['vq-expire']))}`;
+    }
+
+    const totalChars = qNameStr.length + qClassStr.length + qTimeStr.length + footerString.length;
+    if (qNameStr.length > 1024 ||
+        qClassStr.length > 1024 ||
+        qTimeStr.length > 1024 ||
+        totalChars > 6000) {
+
+        await interaction.reply({content: "the queue you are trying to create is too large to send!", ephemeral: true});
+        throw new CommandError("!vq embed too large", `${interaction.member}`);
+    }
+
+    if (combined.length === 0) {
+        logger.log(`!vq empty for ${courses}`, `${interaction.member}`)
+
+        return new Discord.MessageEmbed()
+            .setColor('#500000')
+            .setTitle(title)
+            .setDescription(description)
+            .addFields(
+                { name: 'Status', value: 'Queue is Empty!'}
+            )
+            .setFooter(footerString)
+
+    } else {
+        logger.log(`!vq for ${courses}`, `${interaction.member}`);
+
+        let ret = new Discord.MessageEmbed()
+            .setColor('#500000')
+            .setTitle(title)
+            .setDescription(description)
+            .addFields(
+                { name: 'Student', value: qNameStr, inline: true },
+                { name: 'Course‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎', value: qClassStr, inline: true },
+                { name: 'Queue Time', value: qTimeStr, inline: true },
+            )
+            .setFooter(footerString)
+
+        if (distroStr !== "") {
+            ret.addFields(
+                { name: 'Distribution', value: distroStr },
+            )
+        }
+
+        return ret;
+    
+    }
+}
+
+async function prepareEmbed(msg, courses, combined, distro, options) { /// Not used for slash commands
     
     let maxLen = config['queue-list-amount'];
     if (options['doExtend']) { maxLen = combined.length; }
@@ -333,6 +493,7 @@ async function prepareEmbed(msg, courses, combined, distro, options) {
         return new Discord.MessageEmbed()
             .setColor('#500000')
             .setTitle(`Queue order of ${courseStr}`)
+            .setDescription("description")
             .addFields(
                 { name: 'Status', value: 'Queue is Empty!'}
             )
@@ -344,6 +505,7 @@ async function prepareEmbed(msg, courses, combined, distro, options) {
         let ret = new Discord.MessageEmbed()
             .setColor('#500000')
             .setTitle(`Queue order of ${courseStr}`)
+            .setDescription("description")
             .addFields(
                 { name: 'Student', value: qNameStr, inline: true },
                 { name: 'Course‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎‏‏‎ ‎‏‏‎', value: qClassStr, inline: true },
@@ -381,6 +543,168 @@ function getDistro(courses, queues) {
 module.exports = {
     name: 'vq',
     description: 'displays the queue',
+    slashes: [
+        new SlashCommandBuilder()
+            .setName('vq')
+            .setDescription('Display the queue or see where you are in line')
+            .addSubcommand(subcommand =>
+                subcommand.setName('where')
+                    .setDescription('Tells you where the user is in the queue')
+                    .addUserOption(option =>
+                        option.setName('user')
+                            .setDescription('Who you want to get the place of')
+                            .setRequired(true))
+                    .addStringOption(option =>
+                        option.setName('courses')
+                            .setDescription('Show place in queue for the courses listed')
+                            .setRequired(false)))
+            .addSubcommand(subcommand =>
+                subcommand.setName('pt-queue')
+                    .setDescription('Displays PT\'s queue')
+                    .addUserOption(option =>
+                        option.setName('peer-teacher')
+                            .setDescription('PT who\'s queue you want to display')
+                            .setRequired(true))
+                    .addStringOption(option => 
+                        option.setName('modifier')
+                            .setDescription('Modifies the output of the command')
+                            .setRequired(false)
+                            .addChoice('Prevent compression of nr users in output', 'no-compress')
+                            .addChoice('Hide nr users in output', 'hide-nr')
+                            .addChoice('Display the entire queue regardless of length', 'extend')
+                            .addChoice('Display the entire queue without compressing nr users', 'no-compress+extended')
+                            .addChoice('Display the entire queue not including nr users', 'hide-nr+extended')))
+            .addSubcommand(subcommand =>
+                subcommand.setName('course-queue')
+                    .setDescription('Displays the queue for several courses')
+                    .addStringOption(option => 
+                        option.setName('courses')
+                            .setDescription('Only show queues for courses listed')
+                            .setRequired(true))
+                    .addStringOption(option => 
+                        option.setName('modifier')
+                            .setDescription('Modifies the output of the command')
+                            .setRequired(false)
+                            .addChoice('Prevent compression of nr users in output', 'no-compress')
+                            .addChoice('Hide nr users in output', 'hide-nr')
+                            .addChoice('Display the entire queue regardless of length', 'extend')
+                            .addChoice('Display the entire queue without compressing nr users', 'no-compress+extended')
+                            .addChoice('Display the entire queue not including nr users', 'hide-nr+extended')))
+    ],
+
+    permissions: {
+        vq: {
+            permissions: [{
+                id: '804540323367354388',
+                type: 'ROLE',
+                permission: true
+            }]
+        }
+    },
+
+    async executeInteraction(interaction, data) {
+        let queues = data.queues;
+        let courses = interaction.options.getString('courses');
+        let failed = [];
+
+        let qargs = {
+            'doCompress': true,
+            'doExtend': false,
+            'doSkipNr': false,
+            'courses': []
+        }
+
+        if (courses) {
+            courses = courses.split(' ');
+            if (courses.includes('all')) { qargs['courses'] = config['course-emotes'] }
+            else {
+                for (const course of courses) {
+                    if (config['course-emotes'].includes(course)) {
+                        qargs['courses'].push(course)
+                    } else {
+                        failed.push(course);
+                    }
+                }
+            }
+        }
+
+        const subcommand = interaction.options.getSubcommand();
+        if (subcommand === 'where') { /// Finds a person in specified queues
+            const user = interaction.options.getUser('user');
+            if (qargs['courses'].length === 0) {
+                for (const [key, qL] of queues) {
+                    const found = qL.findIndex(e => e.user === user.id);
+                    if (found !== -1) {
+                        await interaction.reply(`${user} is ${getPlace(found+1)} in the ${key} queue`);
+                        return true;
+                    } else {
+                        await interaction.reply(`${user} isn't in the ${key} queue`);
+                    }
+                }
+            } else {
+                const found = combineQueuesInteraction(queues, qargs['courses']).findIndex(e => e.user === user.id);
+                if (found !== -1) {
+                    await interaction.reply(`${user} is ${getPlace(found+1)} in the ${qargs['courses'].join(', ')} queue`);
+                    return true;
+                } else {
+                    await interaction.reply(`${user} isn't in the ${qargs['courses'].join(', ')} queue`);
+                }
+            }
+
+        } else if (subcommand === 'pt-queue' || subcommand === 'course-queue') { /// Displays an embed displaying a queue
+            const modifier = interaction.options.getString('modifier');
+            let peerteacher = interaction.options.getUser('peer-teacher');
+
+            // Handle modifiers
+            if (modifier) {
+                if (modifier === 'no-compress') { qargs['doCompress'] = false; }
+                else if (modifier === 'hide-nr') { qargs['doSkipNr'] = true; }
+                else if (modifier === 'extend') { qargs['doExtend'] = true; }
+                else if (modifier === 'no-compress+extended') { 
+                    qargs['doCompress'] = false; 
+                    qargs['doExtend'] = true; 
+                }
+                else if (modifier === 'hide-nr+extended') { 
+                    qargs['doSkipNr'] = true; 
+                    qargs['doExtend'] = true; 
+                }
+            }
+
+            if (peerteacher) { /// Grab queues from the peer teacher's roles
+                peerteacher = await interaction.guild.members.fetch(peerteacher.id);
+                for (const [roleId, role] of peerteacher.roles.cache) {
+                    if (role.name.startsWith('CSCE')) {
+                        qargs['courses'].push(common.parseRoleToEmote(role.name))
+                    }
+                }
+
+                if (qargs['courses'].length === 0) {
+                    interaction.reply(`${peerteacher} isn't registered for any classes (maybe they forgot to stop by <#737169678677311578>?)`);
+                    throw new CommandError(`/vq ${peerteacher} not registered`, `${interaction.member}`)
+                }
+
+                qargs['courses'].sort();
+            } 
+
+            if (qargs['courses'].length === 0) {
+                interaction.reply(`No valid courses were specified in ${failed.join(', ')}`);
+                throw new CommandError(`/vq no valid courses in ${interaction.options.getString('courses')}`)
+            } else {
+                let combined = combineQueuesInteraction(queues, qargs['courses']);
+                const embed = prepareEmbedInteraction(interaction, qargs, combined, queues, peerteacher);
+                await interaction.reply({embeds: [await embed]});
+                if (interaction.channel.name !== "command-spam") { 
+                    setTimeout(() => { interaction.deleteReply(); }, config['vq-expire']); 
+                }
+                return true;
+            }
+
+        }
+
+
+        await interaction.reply('Idk how you got down here');
+    },
+
     async execute(msg, args, options) {
         let queues = options.queues;
         let activeVQs = options.activeVQs;

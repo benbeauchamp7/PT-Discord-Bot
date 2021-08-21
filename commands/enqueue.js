@@ -5,6 +5,7 @@ const replies = require('../custom_modules/replies.js');
 const save = require('../custom_modules/save.js');
 const CommandError = require('../custom_modules/commandError.js');
 const common = require('../custom_modules/common.js')
+const { SlashCommandBuilder } = require('@discordjs/builders');
 
 async function checkMention(mention, msg) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
@@ -23,6 +24,17 @@ function roleCheck(msg, roles) {
 module.exports = {
     name: 'q',
     description: 'puts a student into a queue',
+    // slashes: [
+    //     new SlashCommandBuilder()
+    //     .setName('q')
+    //     .setDescription('puts a student into a queue')
+    //     .addUserOption(option =>
+    //         option.setName('user')
+    //             .setDescription('The user to queue (PT only)')
+    //             .setRequired(false)),
+    //     .add
+    // ],
+
     async execute(msg, args, options) {
         let queues = options.queues;
         let bot = options.bot;

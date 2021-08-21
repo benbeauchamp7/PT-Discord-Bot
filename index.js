@@ -27,14 +27,70 @@ const prefix = process.env.PREFIX
 const doModChat = config['do-moderate-chat'];
 const otherCommands = config['other-commands'];
 
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
+const rest = new REST({version: '9'}).setToken(process.env.BOT_TOKEN);
+
 // Imports all the commands from the commands folder
 bot.commands = new Discord.Collection();
+const commandList = [];
+const permsList = [];
+const permsDict = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith('.js'));
+
 for (const file of commandFiles) {
     // Include command files
     const command = require(`./commands/${file}`);
+    if (command.name == 'ping' || command.name == 'vq') {
+        for (const scmd of command.slashes) {
+            let jsoncmd = scmd.toJSON();
+            jsoncmd['default_permission'] = false;
+            commandList.push(jsoncmd);
+        }
+
+        for (const [key, val] of Object.entries(command.permissions)) {
+            permsDict.set(key, val)
+        }
+    }
     bot.commands.set(command.name, command);
 }
+
+// Registers slash commands
+(async () => {
+
+    try {
+        logger.log('Refreshing application commands...', "none");
+        
+        rest.put(
+            Routes.applicationGuildCommands(process.env.BOT_ID, config['guildId']),
+            { body: commandList }
+        ).then(response => {
+
+            logger.log('Got response', 'none');
+
+            // Get ids from the commands to set permissions
+            for (const command of response) {
+                permsDict.get(command['name'])['id'] = command['id']
+                permsList.push({
+                    id: command['id'],
+                    permissions: permsDict.get(command['name'])['permissions']
+                })
+            }
+
+            bot.guilds.fetch('731645274807599225').then(rep => {
+                rep.commands.permissions.set({ fullPermissions: permsList }).then(() => {
+                    logger.log('Done refreshing application commands!', 'none');
+                })
+            })
+
+        })
+
+
+
+    } catch (err) {
+        logger.logError(err)
+    }
+})();
 
 // Handles automatic cleanup of channels
 let intervalMap = new Map();
@@ -132,7 +188,6 @@ function isOnCooldown(userID) {
 bot.on('ready', async () => {
 
     // Ping console when bot is ready
-    console.log('Bot Ready!');
     logger.log("Bot Ready", "none");
 
     
@@ -145,7 +200,6 @@ bot.on('ready', async () => {
     if (process.env.TESTING == 'true') {
         queues = save.loadQueueLocalOnly();
         
-        console.log('Queue loaded from local');
         logger.log("Queue ready from local", "none");
 
         return;
@@ -337,7 +391,7 @@ bot.on('messageCreate', msg => {
 
             // Catch invalid commands
             if (!otherCommands.includes(command)) {
-                replies.timedReply(msg, 'you have written an invalid command, maybe you made a typo?', config['bot-alert-timeout']);
+                replies.timedReply(msg, 'You have written an invalid command, maybe you made a typo?', config['bot-alert-timeout']);
 
                 logger.log(`ERROR: base error thrown CONTENT:${msg.content} |||| CHAN:#${msg.channel.name}`, `${msg.author}`);
             }
@@ -350,24 +404,34 @@ bot.on('messageCreate', msg => {
     
 });
 
-// Create shutdown signal every 24 hours so that the bot reboots at night
-// Currently resets at 7:45am
-schedule.scheduleJob('45 7 * * *', function() {
-    // Use SIGUSR1 to clear the queue
-    process.emit('SIGUSR1');
-});
+// Handle interaction commands
+bot.on('interactionCreate', async interaction => {
+    if (!interaction.isCommand()) return;
 
-// Save the queues every 15 minutes excluding midnight to 8am and saturdays
-let saveTimer = setInterval(() => {
-   let d = new Date();
-   console.log(`Test: ${updateQueues.val}`);
-   if (d.getDay() == 6 || !(d.getHours() >= 8) || updateQueues.val === false) { return; }
+    const command = bot.commands.get(interaction.commandName);
+    
+    if (!command) {
+        await interaction.reply({content: "You have written an invalid command, maybe you made a typo?", ephemeral: true});
+        return;
+    }
 
-   save.saveQueue(queues);
-   save.uploadQueue();
-   updateQueues.val = false;
+    try {
+        const options = {
+            bot: bot,
+            intervalMap: intervalMap,
+            cooldown: cooldownUsers, 
+            queues: queues,
+            activeVQs: activeVQs,
+            cycles: cycles,
+            updateQueues: updateQueues
+        }
 
-}, 1000 * 60 * 15)
+        await command.executeInteraction(interaction, options);
+    } catch (err) {
+        console.log(err);
+        await interaction.reply({content: 'Something went wrong...', ephemeral: true})
+    }
+})
 
 process.on("SIGUSR1", () => {
     logger.log("SIGUSR1 sent, sending SIGTERM for shutdown and clearing queue", "#system");
@@ -430,5 +494,23 @@ process.on('SIGTERM', async () => {
 process.on('unhandledRejection', error => {
     console.log('Unhandled promise rejection', error);
 });
+
+// Create shutdown signal every 24 hours so that the bot reboots at night
+// Currently resets at 7:45am
+schedule.scheduleJob('45 7 * * *', function() {
+    // Use SIGUSR1 to clear the queue
+    process.emit('SIGUSR1');
+});
+
+// Save the queues every 15 minutes excluding midnight to 8am and saturdays
+let saveTimer = setInterval(() => {
+   let d = new Date();
+   if (d.getDay() == 6 || !(d.getHours() >= 8) || updateQueues.val === false) { return; }
+
+   save.saveQueue(queues);
+   save.uploadQueue();
+   updateQueues.val = false;
+
+}, 1000 * 60 * 15)
 
 bot.login(process.env.BOT_TOKEN);

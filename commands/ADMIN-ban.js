@@ -4,6 +4,8 @@ const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const replies = require('../custom_modules/replies.js');
 const CommandError = require('../custom_modules/commandError.js');
 
+const { SlashCommandBuilder } = require('@discordjs/builders');
+
 async function getUserFromMention(msg, mention) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
         // Return the id
@@ -24,6 +26,14 @@ function report(anchor, user, target) {
 module.exports = {
     name: '#ban',
     description: 'bans a student',
+    // slash: new SlashCommandBuilder()
+    //     .setName(this.name)
+    //     .setDescription(this.description)
+    //     .addUserOption(option =>
+    //         option.setName('user')
+    //             .setDescription('The user to ban')
+    //             .setRequired(true)),
+
     async execute(message, args) {
 
         if (!message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
