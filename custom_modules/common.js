@@ -50,6 +50,21 @@ module.exports = {
         hrs = (hrs == 0 ? 12 : hrs); // Makes midnight 12am instead of 0am
         let mins = (time.getMinutes() > 9 ? time.getMinutes() : `0${time.getMinutes()}`)
         return `${hrs}:${mins} ${amPm}`;
+    },
+
+    getPlace: function (rank) {
+        switch (rank) {
+            case 1:  return "**first**";
+            case 2:  return "**second**";
+            case 3:  return "**third**";
+            case 4:  return "**fourth**";
+            case 5:  return "**fifth**";
+            case 6:  return "**sixth**";
+            case 7:  return "**seventh**";
+            case 8:  return "**eighth**";
+            case 9:  return "**ninth**";
+            default: return "number **" + rank + "**";
+        }
     }
 
 }

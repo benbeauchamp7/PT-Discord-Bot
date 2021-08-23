@@ -41,7 +41,7 @@ const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith(
 for (const file of commandFiles) {
     // Include command files
     const command = require(`./commands/${file}`);
-    if (command.name == 'ping' || command.name == 'vq') {
+    if (command.slashes) {
         for (const scmd of command.slashes) {
             let jsoncmd = scmd.toJSON();
             jsoncmd['default_permission'] = false;
@@ -75,6 +75,11 @@ for (const file of commandFiles) {
                     id: command['id'],
                     permissions: permsDict.get(command['name'])['permissions']
                 })
+            }
+
+            console.log(permsList);
+            for (e of permsList) {
+                console.log(e.permissions);
             }
 
             bot.guilds.fetch('731645274807599225').then(rep => {
@@ -426,7 +431,16 @@ bot.on('interactionCreate', async interaction => {
             updateQueues: updateQueues
         }
 
-        await command.executeInteraction(interaction, options);
+        await command.executeInteraction(interaction, options).catch(err => {
+            if (err instanceof CommandError) {
+                // Catch CommandErrors as user errors
+                logger.log(err.message, err.user)
+            } else {
+                // Catch other errors as programming errors
+                logger.logError(err);
+            }
+            
+        });
     } catch (err) {
         console.log(err);
         await interaction.reply({content: 'Something went wrong...', ephemeral: true})

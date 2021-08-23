@@ -8,21 +8,6 @@ const common = require('../custom_modules/common.js');
 
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
-function getPlace(rank) {
-    switch (rank) {
-        case 1:  return "**first**";
-        case 2:  return "**second**";
-        case 3:  return "**third**";
-        case 4:  return "**fourth**";
-        case 5:  return "**fifth**";
-        case 6:  return "**sixth**";
-        case 7:  return "**seventh**";
-        case 8:  return "**eighth**";
-        case 9:  return "**ninth**";
-        default: return "number **" + rank + "**";
-    }
-}
-
 async function displayCurrChan(msg, qList) { // Not used by slash command
     let qNameStr = "";
     let qTimeStr = "";
@@ -115,7 +100,7 @@ function getPlaceInLine(msg, queues, user, args, spliced) { /// Not used for sla
         for (let [key, qList] of queues) {
             for (let i = 0; i < qList.length; i++) {
                 if (user.id === qList[i].user) {
-                    let position = getPlace(i + 1);
+                    let position = common.getPlace(i + 1);
                     
                     msg.channel.send(`${user} is ${position} in the ${key} queue`);
                     logger.log(`!vq ${user} in line`, `${msg.author}`)
@@ -127,7 +112,7 @@ function getPlaceInLine(msg, queues, user, args, spliced) { /// Not used for sla
         let qList = combineQueues(msg, args, queues);
         for (let i = 0; i < qList.length; i++) {
             if (user.id === qList[i].user) {
-                let position = getPlace(i + 1);
+                let position = common.getPlace(i + 1);
                 
                 msg.channel.send(`${user} is ${position} in the ${args.join(', ')} queue`);
                 logger.log(`!vq ${user} in line`, `${msg.author}`)
@@ -635,19 +620,21 @@ module.exports = {
                 for (const [key, qL] of queues) {
                     const found = qL.findIndex(e => e.user === user.id);
                     if (found !== -1) {
-                        await interaction.reply(`${user} is ${getPlace(found+1)} in the ${key} queue`);
+                        await interaction.reply(`${user} is ${common.getPlace(found+1)} in the ${key} queue`);
                         return true;
                     } else {
                         await interaction.reply(`${user} isn't in the ${key} queue`);
+                        return false;
                     }
                 }
             } else {
                 const found = combineQueuesInteraction(queues, qargs['courses']).findIndex(e => e.user === user.id);
                 if (found !== -1) {
-                    await interaction.reply(`${user} is ${getPlace(found+1)} in the ${qargs['courses'].join(', ')} queue`);
+                    await interaction.reply(`${user} is ${common.getPlace(found+1)} in the ${qargs['courses'].join(', ')} queue`);
                     return true;
                 } else {
                     await interaction.reply(`${user} isn't in the ${qargs['courses'].join(', ')} queue`);
+                    return false;
                 }
             }
 
