@@ -621,9 +621,11 @@ module.exports = {
                     const found = qL.findIndex(e => e.user === user.id);
                     if (found !== -1) {
                         await interaction.reply(`${user} is ${common.getPlace(found+1)} in the ${key} queue`);
+                        logger.log(`/vq ${user} is ${common.getPlace(found+1)} in ${key}`, `${interaction.member}`);
                         return true;
                     } else {
                         await interaction.reply(`${user} isn't in the ${key} queue`);
+                        logger.log(`/vq ${user} not in ${key}`, `${interaction.member}`);
                         return false;
                     }
                 }
@@ -631,9 +633,11 @@ module.exports = {
                 const found = combineQueuesInteraction(queues, qargs['courses']).findIndex(e => e.user === user.id);
                 if (found !== -1) {
                     await interaction.reply(`${user} is ${common.getPlace(found+1)} in the ${qargs['courses'].join(', ')} queue`);
+                    logger.log(`/vq ${user} is ${common.getPlace(found+1)} in ${qargs['courses'].join(', ')}`, `${interaction.member}`);
                     return true;
                 } else {
                     await interaction.reply(`${user} isn't in the ${qargs['courses'].join(', ')} queue`);
+                    logger.log(`/vq ${user} not in ${qargs['courses'].join(', ')}`, `${interaction.member}`);
                     return false;
                 }
             }
@@ -688,8 +692,7 @@ module.exports = {
 
         }
 
-
-        await interaction.reply('Idk how you got down here');
+        throw new "Bottom of View Queue";
     },
 
     async execute(msg, args, options) {

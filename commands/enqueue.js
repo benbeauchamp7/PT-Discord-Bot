@@ -18,10 +18,6 @@ async function checkMention(mention, msg) {
     return false;
 }
 
-function roleCheck(member, roles) {
-    return member.roles.cache.find(r => roles.includes(r.name))
-}
-
 module.exports = {
     name: 'q',
     description: 'puts a student into a queue',
@@ -61,10 +57,11 @@ module.exports = {
         let targetUser = (user)? user : interaction.member;
         
         // Do validation
-        if ((user || at) && !roleCheck(interaction.member, config['elevated-roles'])) { // Check permissions for arguments
+        if ((user || at) && !common.roleCheck(interaction.member, config['elevated-roles'])) { // Check permissions for arguments
             await interaction.reply({content: 'You don\'t have permission to use the "user" or "at" parameters', ephemeral: true});
             throw new CommandError("/q insufficient permissions", `${interaction.member}`)
         } else if (into && !config['course-emotes'].includes(into)) { // Check if "into" is invalid
+            console.log(into);
             await interaction.reply({content: '"into" argument requires a single course code argument such as 121 or 312', ephemeral: true});
             throw new CommandError("/q into has invalid target", `${interaction.member}`);
         } else if (!into && !config['course-emotes'].includes(interaction.channel.name.substring(5))) {
@@ -136,7 +133,7 @@ module.exports = {
         let position = -1;
 
         // Check for elevated user to allow args
-        if (roleCheck(msg.member, config['elevated-roles']) && args.length !== 0) {
+        if (common.roleCheck(msg.member, config['elevated-roles']) && args.length !== 0) {
             
             // If a valid mention
             let mentionID = await checkMention(args[0], msg);

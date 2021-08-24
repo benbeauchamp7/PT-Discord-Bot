@@ -1,5 +1,9 @@
 // General common use functions
 module.exports = {
+    roleCheck: function (member, roles) {
+        return member.roles.cache.find(r => roles.includes(r.name))
+    },
+
     parseEmoteToChannel: function (emote) {
 
         // Scroll to first non-numeric character
