@@ -55,48 +55,6 @@ for (const file of commandFiles) {
     bot.commands.set(command.name, command);
 }
 
-// Registers slash commands
-(async () => {
-
-    try {
-        logger.log('Refreshing application commands...', "none");
-        
-        rest.put(
-            Routes.applicationGuildCommands(process.env.BOT_ID, config['guildId']),
-            { body: commandList }
-        ).then(response => {
-
-            logger.log('Got response', 'none');
-
-            // Get ids from the commands to set permissions
-            for (const command of response) {
-                permsDict.get(command['name'])['id'] = command['id']
-                permsList.push({
-                    id: command['id'],
-                    permissions: permsDict.get(command['name'])['permissions']
-                })
-            }
-
-            console.log(permsList);
-            for (e of permsList) {
-                console.log(e.permissions);
-            }
-
-            bot.guilds.fetch('731645274807599225').then(rep => {
-                rep.commands.permissions.set({ fullPermissions: permsList }).then(() => {
-                    logger.log('Done refreshing application commands!', 'none');
-                })
-            })
-
-        })
-
-
-
-    } catch (err) {
-        logger.logError(err)
-    }
-})();
-
 // Handles automatic cleanup of channels
 let intervalMap = new Map();
 let warnMap = new Map();
@@ -134,9 +92,9 @@ async function checkChanTimeout(categoryChannel) {
     let textChan = undefined;
     let voiceChanCount = 0;
     for (const chan of categoryChannel.children) {
-        if (chan[1].type == 'text') {
+        if (chan[1].type == 'GUILD_TEXT') {
             textChan = chan[1];
-        } else if (chan[1].type == 'voice') {
+        } else if (chan[1].type == 'GUILD_VOICE') {
             voiceChanCount += chan[1].members.size;
         }
     }
@@ -194,6 +152,40 @@ bot.on('ready', async () => {
 
     // Ping console when bot is ready
     logger.log("Bot Ready", "none");
+
+    // Registers slash commands
+
+    try {
+        logger.log('Refreshing application commands...', "none");
+        
+        rest.put(
+            Routes.applicationGuildCommands(process.env.BOT_ID, config['guildId']),
+            { body: commandList }
+        ).then(response => {
+            let csave;
+            try {
+                for (const command of response) { /// Get ids from the commands to set permissions
+                    csave = command['name'];
+                    permsDict.get(command['name'])['id'] = command['id']
+                    permsList.push({
+                        id: command['id'],
+                        permissions: permsDict.get(command['name'])['permissions']
+                    })
+                }
+            } catch (err) {
+                logger.log(`ERROR in ready for command ${csave}`, 'ERROR');
+            }
+                
+
+            bot.guilds.fetch('731645274807599225').then(rep => { /// Set permissions for the commands
+                rep.commands.permissions.set({fullPermissions: permsList }).then(() => {
+                    logger.log('Done refreshing application commands!', 'none');
+                }).catch(err => {console.log(err)});
+            })
+        })
+    } catch (err) {
+        logger.logError(err)
+    }
 
     
     // Initialize the queue map

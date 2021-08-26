@@ -44,7 +44,50 @@ function report(anchor, user, target, dest) {
 module.exports = {
     name: '#move',
     description: 'moves a student from their current channel to a destination channel',
+    // slashes: [new SlashCommandBuilder()
+    //     .setName('move')
+    //     .setDescription('Moves a student from their current channel to a destination channel')
+    //     .addUserOption(option =>
+    //         option.setName('user')
+    //             .setDescription('The user to move')
+    //             .setRequired(true))
+    // ],
+
+    // permissions: {
+    //     kick: {
+    //         permissions: [{
+    //             id: '750838675763494995',
+    //             type: 'ROLE',
+    //             permission: true
+    //         }]
+    //     }
+    // },
+
+    async executeInteraction(interaction) { /// DOES NOT WORK
+        await interaction.reply({content: 'This command is disabled', ephemeral: true});
+        throw new CommandError('#move is disabled');
+
+        const target = await interaction.guild.members.fetch(interaction.options.getUser('user'));
+        const reason = interaction.options.getString('reason');
+        if (target.id === interaction.member.id) {
+            await interaction.reply({content: 'You can\'t move yourself this way (just click on the voice channel)', ephemeral: true});
+            throw new CommandError('/#move self', `${interaction.member}`);
+        } else if (common.roleCheck(target, config['elevated-roles'])) {
+            await interaction.reply({content: 'You can\'t move another elevated user, this action was recorded', ephemeral: true});
+            throw new CommandError(`/#move elevated ${target}`, `${interaction.member}`);
+        } else {
+            // await interaction.reply(`${target} was moved from ${} to ${}`);
+            target.kick({reason: reason});
+            logger.log(`WARN: /#kick ${target}`, `${interaction.member}`);
+            interaction.guild.channels.resolve(config["infraction-chan-id"]).send(`<@&${config['bot-manager-role-id']}>s, ${interaction.member} used !#kick on ${target}`);
+
+            return true;
+        }
+    },
+
     async execute(message, args) {
+        replies.timedReply(message, `This command is disabled`, config["bot-alert-timeout"]);
+        throw new CommandError('#move is disabled');
 
         if (!message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
             replies.timedReply(message, "you do not have permission to use this command.", config["bot-alert-timeout"]);

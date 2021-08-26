@@ -1,14 +1,11 @@
 const logger = require('../custom_modules/logging.js');
 const Discord = require("discord.js");
 
-module.exports = {
-    name: 'commands',
-    description: 'lists all commands',
-    async execute(message) {
-        const commands = new Discord.MessageEmbed()
-                .setColor('#500000')
-                .setTitle('Commands you can use')
-                .addFields(
+function getEmbed() {
+    return new Discord.MessageEmbed()
+    .setColor('#500000')
+    .setTitle('Commands you can use')
+    .addFields(
 { name: "Key", value: `**>** indicates this feature is available to all users
 **X** indicates this feature is not available to students`},
 
@@ -95,8 +92,16 @@ module.exports = {
 **X** \`!#unmute\` removes server mute from a student.
 `}
 
-                )
-                .setFooter("This embed will disappear in 5 minutes");;
+    )
+    .setFooter("This embed will disappear in 5 minutes");
+}
+
+module.exports = {
+    name: 'commands',
+    description: 'lists all commands',
+    
+    async execute(message) {
+        const commands = getEmbed();
 
         message.channel.send({embeds: [commands]}).then(reply => {
             setTimeout(() => { reply.delete(); }, 5*60*1000);
