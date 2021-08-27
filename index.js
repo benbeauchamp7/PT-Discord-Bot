@@ -162,10 +162,10 @@ bot.on('ready', async () => {
             Routes.applicationGuildCommands(process.env.BOT_ID, config['guildId']),
             { body: commandList }
         ).then(response => {
-            let csave;
+            let cname;
             try {
                 for (const command of response) { /// Get ids from the commands to set permissions
-                    csave = command['name'];
+                    cname = command['name'];
                     permsDict.get(command['name'])['id'] = command['id']
                     permsList.push({
                         id: command['id'],
@@ -173,7 +173,7 @@ bot.on('ready', async () => {
                     })
                 }
             } catch (err) {
-                logger.log(`ERROR in ready for command ${csave}`, 'ERROR');
+                logger.log(`ERROR in ready for command ${cname}`, 'ERROR');
             }
                 
 

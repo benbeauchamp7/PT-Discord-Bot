@@ -6,10 +6,52 @@ const save = require("../custom_modules/save.js");
 const replies = require('../custom_modules/replies.js');
 const CommandError = require('../custom_modules/commandError.js');
 const common = require('../custom_modules/common.js');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 
 module.exports = {
     name: 'clearqueue',
     description: 'empties all the queues',
+    slashes: [
+        new SlashCommandBuilder()
+            .setName('clearqueue')
+            .setDescription('Clears the queue (THIS CANNOT BE UNDONE)')
+    ],
+
+    permissions: {
+        clearqueue: {
+            permissions: [{
+                id: '750838675763494995',
+                type: 'ROLE',
+                permission: true
+            }]
+        }
+    },
+
+    async executeInteraction(interaction, data) {
+        interaction.reply('Type "confirm" to confirm or cancel otherwise. This command will expire in 15 seconds').then(() => {
+            interaction.channel.awaitMessages({
+                filter: resp => resp.author.id === interaction.member.id,
+                max: 1,
+                time: 15*1000,
+                errors: ['time']
+            }).then(collected => {
+                if (collected.first().content.toLowerCase() === 'confirm') {
+                    interaction.followUp('Confirmed! Clearing queue...');
+                    common.emptyQueues(interaction.guild, data.queues, config);
+                    save.saveQueue(data.queues);
+                    data.updateQueues.val = true;
+                } else {
+                    interaction.followUp('Message was not "confirm", cancelling command');
+                    return false;
+                }
+            }).catch((err) => {
+                console.log(err);
+                interaction.followUp('No confirmation by time limit, cancelling...');
+                return false;
+            });
+        })
+    },
+
     async execute(message, args, options) {
         let queues = options.queues;
 

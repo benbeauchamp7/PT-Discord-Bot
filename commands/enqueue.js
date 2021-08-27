@@ -61,7 +61,6 @@ module.exports = {
             await interaction.reply({content: 'You don\'t have permission to use the "user" or "at" parameters', ephemeral: true});
             throw new CommandError("/q insufficient permissions", `${interaction.member}`)
         } else if (into && !config['course-emotes'].includes(into)) { // Check if "into" is invalid
-            console.log(into);
             await interaction.reply({content: '"into" argument requires a single course code argument such as 121 or 312', ephemeral: true});
             throw new CommandError("/q into has invalid target", `${interaction.member}`);
         } else if (!into && !config['course-emotes'].includes(interaction.channel.name.substring(5))) {
