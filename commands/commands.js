@@ -1,3 +1,5 @@
+// WILL BE GOING AWAY //
+
 const logger = require('../custom_modules/logging.js');
 const Discord = require("discord.js");
 

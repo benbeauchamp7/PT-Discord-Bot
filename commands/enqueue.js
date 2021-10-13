@@ -6,7 +6,6 @@ const save = require('../custom_modules/save.js');
 const CommandError = require('../custom_modules/commandError.js');
 const common = require('../custom_modules/common.js')
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { executeInteraction } = require('./viewqueue.js');
 
 async function checkMention(mention, msg) {
     if (mention.match(/^<@!?(\d+)>$/g)) {

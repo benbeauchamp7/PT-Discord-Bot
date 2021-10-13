@@ -47,7 +47,7 @@ for (const file of commandFiles) {
             jsoncmd['default_permission'] = false;
             commandList.push(jsoncmd);
         }
-
+        
         for (const [key, val] of Object.entries(command.permissions)) {
             permsDict.set(key, val)
         }
@@ -173,6 +173,7 @@ bot.on('ready', async () => {
                     })
                 }
             } catch (err) {
+                console.log(err);
                 logger.log(`ERROR in ready for command ${cname}`, 'ERROR');
             }
                 
