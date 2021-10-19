@@ -54,10 +54,12 @@ module.exports = {
 
         // Add target to the dq list along with any other specified users
         let targetList = (target)? [target.id] : [];
-        for (const user in targetMany?.replace('><', '> <').split(' ')) {
-            if ((user.startsWith('<@') || user.startsWith('<@!')) && user.endsWith('>')) {
-                const idStart = user.split('').findIndex(e => e >= '0' && e <= '9');
-                targetList.push(user.substring(idStart, user.length-1));
+        if (targetMany) {
+            for (const user of targetMany.replace('><', '> <').split(' ')) {
+                if ((user.startsWith('<@') || user.startsWith('<@!')) && user.endsWith('>')) {
+                    const idStart = user.split('').findIndex(e => e >= '0' && e <= '9');
+                    targetList.push(user.substring(idStart, user.length-1));
+                }
             }
         }
 
