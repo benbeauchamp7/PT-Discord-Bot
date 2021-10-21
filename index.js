@@ -67,7 +67,6 @@ let cooldownUsers = new Map();
 
 // Contains the queue system in the form {course -> [queue]}
 let queues = new Map();
-let cycles = new Map();
 
 let updateQueues = {};
 updateQueues.val = false;
@@ -232,28 +231,6 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
     const channelLeft = oldMember.channelID;
     const user = newMember.member
 
-    // Cycle functionality (unimplemented)
-    if (channelLeft !== null && channelLeft !== undefined && channelLeft.name === "Cycling Room") {
-        // Remove from cycle
-        if (!cycles.has(msg.channel.id)) { cycles.set(voiceChan.id, []); }
-        let cycle = cycles.get(voiceChan.id);
-
-        const index = array.indexOf(voiceChan.id);
-        if (index > -1) {
-            cycle.splice(index, 1);
-        }
-
-        cycles.set(voiceChan.id, cycle);
-
-    } else if (channelJoined !== null && channelJoined !== undefined && channelJoined.name == "Cycling Room") {
-        // Record spot in cycle
-        if (!cycles.has(msg.channel.id)) { cycles.set(voiceChan.id, []); }
-        let cycle = cycles.get(voiceChan.id);
-        cycle.push(channelJoined.member);
-        cycles.set(voiceChan.id, cycle);
-
-    }
-
     // If the user leaves a channel, do nothing (if not cycle)
     if (channelJoined === null || channelJoined === undefined) { return; }
 
@@ -363,7 +340,6 @@ bot.on('messageCreate', msg => {
                 cooldown: cooldownUsers, 
                 queues: queues,
                 activeVQs: activeVQs,
-                cycles: cycles,
                 updateQueues: updateQueues
             }
             
@@ -420,7 +396,6 @@ bot.on('interactionCreate', async interaction => {
             cooldown: cooldownUsers, 
             queues: queues,
             activeVQs: activeVQs,
-            cycles: cycles,
             updateQueues: updateQueues
         }
 
