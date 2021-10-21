@@ -1,3 +1,5 @@
+// FILE CAN BE DELETED
+
 const Discord = require('discord.js');
 
 module.exports = {

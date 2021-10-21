@@ -3,6 +3,26 @@ const replies = require('../custom_modules/replies.js');
 module.exports = {
     name: 'survey',
     description: 'Links a google survey for feedback',
+    slashes: [
+        new SlashCommandBuilder()
+            .setName('survey')
+            .setDescription('Gives the link to the peer teacher survey!')
+    ],
+
+    permissions: {
+        q: {
+            permissions: [{
+                id: '804540323367354388',
+                type: 'ROLE',
+                permission: false // SET TO TRUE WHEN SURVEY IS LIVE
+            }]
+        }
+    },
+
+    async executeInteraction(interaction, data) {
+        await interaction.reply({content: "YOUR LINK HERE", ephemeral: false});
+    },
+
     async execute(message) {
 
         replies.timedReply(message, "there are no active surveys at this time, thanks for checking though!", config['bot-alert-timeout'])

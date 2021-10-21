@@ -1,3 +1,5 @@
+// FILE CAN BE DELETED
+
 const logger = require('../custom_modules/logging.js');
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));

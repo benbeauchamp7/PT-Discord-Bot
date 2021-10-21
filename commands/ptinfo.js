@@ -1,3 +1,5 @@
+// FILE CAN BE DELETED
+
 const logger = require('../custom_modules/logging.js');
 const Discord = require("discord.js");
 
