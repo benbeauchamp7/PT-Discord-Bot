@@ -623,12 +623,13 @@ module.exports = {
                         await interaction.reply(`${user} is ${common.getPlace(found+1)} in the ${key} queue`);
                         logger.log(`/vq ${user} is ${common.getPlace(found+1)} in ${key}`, `${interaction.member}`);
                         return true;
-                    } else {
-                        await interaction.reply(`${user} isn't in the ${key} queue`);
-                        logger.log(`/vq ${user} not in ${key}`, `${interaction.member}`);
-                        return false;
-                    }
+                    } 
                 }
+
+                await interaction.reply(`${user} isn't in a queue`);
+                logger.log(`/vq ${user} not found by auto-find`, `${interaction.member}`);
+                return false;
+                
             } else {
                 const found = combineQueuesInteraction(queues, qargs['courses']).findIndex(e => e.user === user.id);
                 if (found !== -1) {

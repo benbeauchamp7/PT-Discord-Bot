@@ -164,7 +164,6 @@ bot.on('ready', async () => {
             let cname;
             try {
                 for (const command of response) { /// Get ids from the commands to set permissions
-                    console.log(`Adding /${command['name']}`);
                     cname = command['name'];
                     permsDict.get(command['name'])['id'] = command['id']
                     permsList.push({
