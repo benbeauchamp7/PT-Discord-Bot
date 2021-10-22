@@ -1,5 +1,7 @@
 const logger = require('../custom_modules/logging.js');
 const replies = require('../custom_modules/replies.js');
+const { SlashCommandBuilder } = require('@discordjs/builders');
+
 module.exports = {
     name: 'survey',
     description: 'Links a google survey for feedback',
@@ -10,7 +12,7 @@ module.exports = {
     ],
 
     permissions: {
-        q: {
+        survey: {
             permissions: [{
                 id: '804540323367354388',
                 type: 'ROLE',

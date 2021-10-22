@@ -350,6 +350,8 @@ bot.on('messageCreate', msg => {
                 if (didSucceed && command === "create") {
                     cooldownUsers.set(msg.author.id, Date.now());
                 }
+
+                msg.reply(`The bot now prefers slash commands! Use /${command} instead next time! (Some commands may be named differently)`);
             }).catch(err => {
                 if (err instanceof CommandError) {
                     // Catch CommandErrors as user errors
