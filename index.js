@@ -164,6 +164,7 @@ bot.on('ready', async () => {
             let cname;
             try {
                 for (const command of response) { /// Get ids from the commands to set permissions
+                    console.log(`Adding /${command['name']}`);
                     cname = command['name'];
                     permsDict.get(command['name'])['id'] = command['id']
                     permsList.push({
@@ -177,7 +178,7 @@ bot.on('ready', async () => {
             }
                 
 
-            bot.guilds.fetch('731645274807599225').then(rep => { /// Set permissions for the commands
+            bot.guilds.fetch(config['guildId']).then(rep => { /// Set permissions for the commands
                 rep.commands.permissions.set({fullPermissions: permsList }).then(() => {
                     logger.log('Done refreshing application commands!', 'none');
                 }).catch(err => {console.log(err)});
@@ -220,7 +221,6 @@ bot.on('ready', async () => {
     // Loads queues from a saved file
     queues = await save.loadQueue();
     
-    console.log('Queue Ready!');
     logger.log("Queue Ready", "none");
 
 });
