@@ -533,6 +533,10 @@ module.exports = {
             .setName('vq')
             .setDescription('Display the queue or see where you are in line')
             .addSubcommand(subcommand =>
+                subcommand.setName('me')
+                    .setDescription('Shorthand for /vq pt-queue user: @me or /vq where user: @me')
+            )
+            .addSubcommand(subcommand =>
                 subcommand.setName('where')
                     .setDescription('Tells you where the user is in the queue')
                     .addUserOption(option =>
@@ -606,6 +610,9 @@ module.exports = {
                 for (const course of courses) {
                     if (config['course-emotes'].includes(course)) {
                         qargs['courses'].push(course)
+                    } else if (course == '314') {
+                        qargs['courses'].push('314java');
+                        qargs['courses'].push('314haskell');
                     } else {
                         failed.push(course);
                     }
@@ -614,8 +621,21 @@ module.exports = {
         }
 
         const subcommand = interaction.options.getSubcommand();
+        const user = interaction.options.getUser('user');
+        const modifier = interaction.options.getString('modifier');
+        let peerteacher = interaction.options.getUser('peer-teacher');
+
+        if (subcommand === 'me') {
+            if (interaction.member.roles.cache.find(r => r.name === "Peer Teacher")) {
+                subcommand = 'pt-queue';
+                peerteacher = interaction.member;
+            } else {
+                subcommand = 'where';
+                user = interaction.member;
+            }
+        }
+
         if (subcommand === 'where') { /// Finds a person in specified queues
-            const user = interaction.options.getUser('user');
             if (qargs['courses'].length === 0) {
                 for (const [key, qL] of queues) {
                     const found = qL.findIndex(e => e.user === user.id);
@@ -644,8 +664,6 @@ module.exports = {
             }
 
         } else if (subcommand === 'pt-queue' || subcommand === 'course-queue') { /// Displays an embed displaying a queue
-            const modifier = interaction.options.getString('modifier');
-            let peerteacher = interaction.options.getUser('peer-teacher');
 
             // Handle modifiers
             if (modifier) {
@@ -723,7 +741,7 @@ module.exports = {
             } else if (args[0][0] == '-') {
                 // Options provided but no target
                 replies.timedReply(msg, `no target was specified, usage \`!q [-{c|e|ce}] [@user] [into <course>] [at <position>\``, config['bot-alert-timeout']);
-                throw new CommandError("!vq options \`${args[0]}\` without target", `${msg.author}`);
+                throw new CommandError(`!vq options \`${args[0]}\` without target`, `${msg.author}`);
             }
 
             if (args[0] == 'all') {

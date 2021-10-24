@@ -43,7 +43,7 @@
 
     "role-q-code": "753784888603181157",
 
-    "new-chatroom-msg": "You can use `!topic` to rename this channel if your discussion changes topics. When done, use `!end` to close the chat room.",
+    "new-chatroom-msg": "You can use `/topic` to rename this channel if your discussion changes topics. When done, use `/end` to close the chat room.",
 
     "course-channels": ["csce-110", "csce-111", "csce-121", "csce-206", "csce-221", "csce-222", "csce-312", "csce-313", "csce-313-hnr", "csce-314-java", "csce-314-haskell", "csce-315"],
     "course-roles": ["CSCE-110", "CSCE-111", "CSCE-121", "CSCE-206", "CSCE-221", "CSCE-222", "CSCE-312", "CSCE-313", "CSCE-313-hnr", "CSCE-314-java", "CSCE-314-haskell", "CSCE-315"],
