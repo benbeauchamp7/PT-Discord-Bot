@@ -114,7 +114,8 @@ async function checkChanTimeout(categoryChannel) {
                 const tID = setTimeout(() => {
                     // Use the end command to erase the channel when time is up
                     textChan.send("Channel inactive, deleting...").then(deleteMessage => {
-                        bot.commands.get("end").execute(deleteMessage, '', { intervalMap: intervalMap });
+                        // bot.commands.get("end").execute(deleteMessage, '', { intervalMap: intervalMap });
+                        bot.commands.get("end").delete(deleteMessage.channel, { intervalMap: intervalMap }, true);
                         warnMap.delete(categoryChannel.id);
                         logger.log(`Channel deleted`, `#${categoryChannel.name}`);
                     });
@@ -122,13 +123,17 @@ async function checkChanTimeout(categoryChannel) {
 
                 // Save the timeout in warnMap so it can be cleared later
                 warnMap.set(categoryChannel.id, tID);
-                textChan.send(`This chat will be deleted in ${config['text-room-timeout-afterwarning'] / 1000 / 60} minutes due to inactivity. Say something to delay the timer!`)
+                textChan.send(`This chat will be deleted in ${config['text-room-timeout-afterwarning'] / 1000 / 60} minutes due to inactivity. Say something to delay the timer!`).then(() => {
+                    
+                })
                 logger.log(`Inactivity warning`, `#${categoryChannel.name}`);
             }
 
             // Local message collector to reset inactivity
-            const collector = new Discord.MessageCollector(textChan, response => !response.author.bot, {"time": config['text-room-timeout-afterwarning']})
-            collector.on('collect', reply => {
+            new Discord.MessageCollector(textChan, {
+                'filter': response => !response.author.bot,
+                'time': config['text-room-timeout-afterwarning']
+            }).on('collect', reply => {
                 // Activity detected, cancel countdown
                 clearTimeout(warnMap.get(categoryChannel.id));
                 warnMap.set(categoryChannel.id, null);
@@ -226,12 +231,12 @@ bot.on('ready', async () => {
 
 bot.on('voiceStateUpdate', (oldMember, newMember) => {
     // Click to create room functionality
-    const channelJoined = newMember.channelID;
-    const channelLeft = oldMember.channelID;
+    const channelJoined = newMember.channelId;
     const user = newMember.member
 
     // If the user leaves a channel, do nothing (if not cycle)
     if (channelJoined === null || channelJoined === undefined) { return; }
+
 
     if (channelJoined == config['click-to-join-id']) {
         // If the user isn't on cooldown for creating a room

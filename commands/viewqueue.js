@@ -620,13 +620,13 @@ module.exports = {
             }
         }
 
-        const subcommand = interaction.options.getSubcommand();
-        const user = interaction.options.getUser('user');
-        const modifier = interaction.options.getString('modifier');
+        let subcommand = interaction.options.getSubcommand();
+        let user = interaction.options.getUser('user');
+        let modifier = interaction.options.getString('modifier');
         let peerteacher = interaction.options.getUser('peer-teacher');
 
         if (subcommand === 'me') {
-            if (interaction.member.roles.cache.find(r => r.name === "Peer Teacher")) {
+            if (interaction.member.roles.cache.find(r => r.name === "Peer Teacher" || r.name === "Off the Clock")) {
                 subcommand = 'pt-queue';
                 peerteacher = interaction.member;
             } else {

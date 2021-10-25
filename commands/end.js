@@ -50,29 +50,12 @@ module.exports = {
         
     },
 
-    async executeInteraction(interaction, data) {
-        const chan = interaction.channel;
-        const parentID = chan.parent.id;
-
-        // Exit if /end is in the wrong room
-        if (!chan.parent.name.endsWith(config['student-chan-specifier']) 
-        && !chan.name.endsWith(config['sticky-chan-specifier'])) {
-            await interaction.reply({content: 'You can only use this command in student-created discussion rooms', ephemeral: true});
-            throw new CommandError("!end wrong room", `${message.author}`);
-        }
-
+    async delete(chan, data, doArchive) {
+        // Remove all channels in the same category
+        const cat = chan.parent;
         let movePromise = undefined;
 
-        // End command for non-elevated users
-        if (chan.name.endsWith(config['sticky-chan-specifier']) && !interaction.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
-            
-            await interaction.reply({content: 'You do not have permission to end a PT room', ephemeral: true});
-            throw new CommandError("PT !end failed (insufficient perms)", `${interaction.member}`);
-        }
-
-        // Remove all channels in the same category
         for (const deleteChan of chan.parent.children) {
-            let doArchive = (interaction.options.getBoolean('noarchive') != true);
             if (!config['do-archive-deletions'] || !doArchive || deleteChan[1].type !== "GUILD_TEXT" || chan.name === "unnamed") { // Condition to not archive
                 deleteChan[1].delete();
             } else {
@@ -89,7 +72,7 @@ module.exports = {
         // Remove the category last (if the promise is defined)
         if (movePromise === undefined) {
             logger.log("deleted immediately", `${chan.name}`);
-            interaction.guild.channels.resolve(interaction.guild.channels.resolveId(parentID)).delete();
+            cat.delete();
             return true;
         }
 
@@ -98,7 +81,28 @@ module.exports = {
 
         // This is disgusting, but I need to delete the channel by ID and this is how it's done
         logger.log("archived", `${chan.name}`);
-        interaction.guild.channels.resolve(interaction.guild.channels.resolveId(parentID)).delete();
+        cat.delete();
+    },
+
+    async executeInteraction(interaction, data) {
+        const chan = interaction.channel;
+        const parentID = chan.parent.id;
+
+        // Exit if /end is in the wrong room
+        if (!chan.parent.name.endsWith(config['student-chan-specifier']) 
+        && !chan.name.endsWith(config['sticky-chan-specifier'])) {
+            await interaction.reply({content: 'You can only use this command in student-created discussion rooms', ephemeral: true});
+            throw new CommandError("/end wrong room", `${message.author}`);
+        }
+
+        // End command for non-elevated users
+        if (chan.name.endsWith(config['sticky-chan-specifier']) && !interaction.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {
+            
+            await interaction.reply({content: 'You do not have permission to end a PT room', ephemeral: true});
+            throw new CommandError("PT /end failed (insufficient perms)", `${interaction.member}`);
+        }
+
+        this.delete(chan, data, (interaction.options.getBoolean('noarchive') != true));
 
         await interaction.reply({content: 'Done, the room was archived', ephemeral: false});
 
