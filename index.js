@@ -159,38 +159,38 @@ bot.on('ready', async () => {
 
     // Registers slash commands
 
-    try {
-        logger.log('Refreshing application commands...', "none");
+    // try {
+    //     logger.log('Refreshing application commands...', "none");
         
-        rest.put(
-            Routes.applicationGuildCommands(process.env.BOT_ID, config['guildId']),
-            { body: commandList }
-        ).then(response => {
-            let cname;
-            try {
-                for (const command of response) { /// Get ids from the commands to set permissions
-                    cname = command['name'];
-                    permsDict.get(command['name'])['id'] = command['id']
-                    permsList.push({
-                        id: command['id'],
-                        permissions: permsDict.get(command['name'])['permissions']
-                    })
-                }
-            } catch (err) {
-                console.log(err);
-                logger.log(`ERROR in ready for command ${cname}`, 'ERROR');
-            }
+    //     rest.put(
+    //         Routes.applicationGuildCommands(process.env.BOT_ID, config['guildId']),
+    //         { body: commandList }
+    //     ).then(response => {
+    //         let cname;
+    //         try {
+    //             for (const command of response) { /// Get ids from the commands to set permissions
+    //                 cname = command['name'];
+    //                 permsDict.get(command['name'])['id'] = command['id']
+    //                 permsList.push({
+    //                     id: command['id'],
+    //                     permissions: permsDict.get(command['name'])['permissions']
+    //                 })
+    //             }
+    //         } catch (err) {
+    //             console.log(err);
+    //             logger.log(`ERROR in ready for command ${cname}`, 'ERROR');
+    //         }
                 
 
-            bot.guilds.fetch(config['guildId']).then(rep => { /// Set permissions for the commands
-                rep.commands.permissions.set({fullPermissions: permsList }).then(() => {
-                    logger.log('Done refreshing application commands!', 'none');
-                }).catch(err => {console.log(err)});
-            })
-        })
-    } catch (err) {
-        logger.logError(err)
-    }
+    //         bot.guilds.fetch(config['guildId']).then(rep => { /// Set permissions for the commands
+    //             rep.commands.permissions.set({fullPermissions: permsList }).then(() => {
+    //                 logger.log('Done refreshing application commands!', 'none');
+    //             }).catch(err => {console.log(err)});
+    //         })
+    //     })
+    // } catch (err) {
+    //     logger.logError(err)
+    // }
 
     
     // Initialize the queue map
@@ -234,9 +234,7 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
     const channelJoined = newMember.channelId;
     const user = newMember.member
 
-    // If the user leaves a channel, do nothing (if not cycle)
     if (channelJoined === null || channelJoined === undefined) { return; }
-
 
     if (channelJoined == config['click-to-join-id']) {
         // If the user isn't on cooldown for creating a room
@@ -333,8 +331,19 @@ bot.on('messageCreate', msg => {
         }
     }
 
-    // Command handler
-    if (msg.content.startsWith(prefix) && !badWordFound) {
+    if (msg.content.startsWith('/')) {
+        msg.reply(`Your command ***was not completed***, when using slash commands, be sure that a context menu pops up (see <https://discord.com/channels/731645274807599225/745026000378921093/905573132730003497>)`).then(reply => {
+            setTimeout(() => { msg.delete().catch(() => { console.log("Message already deleted")});; }, 1*60*1000);
+            setTimeout(() => { reply.delete().catch(() => { console.log("Message already deleted")});; }, 1*60*1000);
+        });
+
+    } else if (msg.content.startsWith('\\')) {
+        msg.reply(`Your command ***was not completed***, did you mean \`/${command}\` instead of \`\\${command}\`?`).then(reply => {
+            setTimeout(() => { msg.delete().catch(() => { console.log("Message already deleted")}); }, 1*60*1000);
+            setTimeout(() => { reply.delete().catch(() => { console.log("Message already deleted")});; }, 1*60*1000);
+        });
+
+    } else if (msg.content.startsWith(prefix) && !badWordFound) { // Command handler
         try {
             // Just a conglomeration of stuff the commands might need to execute
             const options = {
@@ -355,7 +364,12 @@ bot.on('messageCreate', msg => {
                     cooldownUsers.set(msg.author.id, Date.now());
                 }
 
-                msg.reply(`The bot now prefers slash commands! Use /${command} instead next time! (Some commands may be named differently)`);
+                if (command != 'say') {
+                    msg.reply(`The bot now prefers slash commands! Use /${command} instead next time!`).then(reply => {
+                        setTimeout(() => { reply.delete(); }, 1*60*1000);
+                    });
+                }
+
             }).catch(err => {
                 if (err instanceof CommandError) {
                     // Catch CommandErrors as user errors
