@@ -159,38 +159,38 @@ bot.on('ready', async () => {
 
     // Registers slash commands
 
-    // try {
-    //     logger.log('Refreshing application commands...', "none");
+    try {
+        logger.log('Refreshing application commands...', "none");
         
-    //     rest.put(
-    //         Routes.applicationGuildCommands(process.env.BOT_ID, config['guildId']),
-    //         { body: commandList }
-    //     ).then(response => {
-    //         let cname;
-    //         try {
-    //             for (const command of response) { /// Get ids from the commands to set permissions
-    //                 cname = command['name'];
-    //                 permsDict.get(command['name'])['id'] = command['id']
-    //                 permsList.push({
-    //                     id: command['id'],
-    //                     permissions: permsDict.get(command['name'])['permissions']
-    //                 })
-    //             }
-    //         } catch (err) {
-    //             console.log(err);
-    //             logger.log(`ERROR in ready for command ${cname}`, 'ERROR');
-    //         }
+        rest.put(
+            Routes.applicationGuildCommands(process.env.BOT_ID, config['guildId']),
+            { body: commandList }
+        ).then(response => {
+            let cname;
+            try {
+                for (const command of response) { /// Get ids from the commands to set permissions
+                    cname = command['name'];
+                    permsDict.get(command['name'])['id'] = command['id']
+                    permsList.push({
+                        id: command['id'],
+                        permissions: permsDict.get(command['name'])['permissions']
+                    })
+                }
+            } catch (err) {
+                console.log(err);
+                logger.log(`ERROR in ready for command ${cname}`, 'ERROR');
+            }
                 
 
-    //         bot.guilds.fetch(config['guildId']).then(rep => { /// Set permissions for the commands
-    //             rep.commands.permissions.set({fullPermissions: permsList }).then(() => {
-    //                 logger.log('Done refreshing application commands!', 'none');
-    //             }).catch(err => {console.log(err)});
-    //         })
-    //     })
-    // } catch (err) {
-    //     logger.logError(err)
-    // }
+            bot.guilds.fetch(config['guildId']).then(rep => { /// Set permissions for the commands
+                rep.commands.permissions.set({fullPermissions: permsList }).then(() => {
+                    logger.log('Done refreshing application commands!', 'none');
+                }).catch(err => {console.log(err)});
+            })
+        })
+    } catch (err) {
+        logger.logError(err)
+    }
 
     
     // Initialize the queue map
