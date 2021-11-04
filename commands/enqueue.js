@@ -222,7 +222,7 @@ module.exports = {
         if (position === -1) { 
             queues.get(course).push({user: user.id, time: Date.now(), ready: true, readyTime: Date.now()});
         } else {
-            queues.get(course).splice(position-1, 0, {user: user.id, time: "Manual", ready: true, readyTime: Date.now()});
+            queues.get(course).splice(position-1, 0, {user: user.id, time: "Manual", ready: true, readyTime: 0});
         }
 
         // Give them the queued role
