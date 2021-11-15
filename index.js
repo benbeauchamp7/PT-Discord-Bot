@@ -418,7 +418,8 @@ bot.on('interactionCreate', async interaction => {
             cooldown: cooldownUsers, 
             queues: queues,
             activeVQs: activeVQs,
-            updateQueues: updateQueues
+            updateQueues: updateQueues,
+            warnMap: warnMap
         }
 
         await command.executeInteraction(interaction, options).catch(err => {
