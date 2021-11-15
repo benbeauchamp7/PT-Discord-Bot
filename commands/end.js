@@ -55,6 +55,12 @@ module.exports = {
         const cat = chan.parent;
         let movePromise = undefined;
 
+        // Cancel countdown if there's one active
+        if (data.warnMap.has(cat.id)) {
+            clearTimeout(data.warnMap.get(cat.id));
+            warnMap.set(cat.id, null);
+        }
+
         for (const deleteChan of chan.parent.children) {
             if (!config['do-archive-deletions'] || !doArchive || deleteChan[1].type !== "GUILD_TEXT" || chan.name === "unnamed") { // Condition to not archive
                 deleteChan[1].delete();
@@ -81,7 +87,9 @@ module.exports = {
 
         // This is disgusting, but I need to delete the channel by ID and this is how it's done
         logger.log("archived", `${chan.name}`);
-        cat.delete();
+        if (cat.id !== config['archive-cat-id']) { // Juuuuuuuuust in case
+            cat.delete();
+        }
     },
 
     async executeInteraction(interaction, data) {
