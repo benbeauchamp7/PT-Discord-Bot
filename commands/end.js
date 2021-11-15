@@ -58,7 +58,7 @@ module.exports = {
         // Cancel countdown if there's one active
         if (data.warnMap.has(cat.id)) {
             clearTimeout(data.warnMap.get(cat.id));
-            warnMap.set(cat.id, null);
+            data.warnMap.set(cat.id, null);
         }
 
         for (const deleteChan of chan.parent.children) {
