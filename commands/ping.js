@@ -21,7 +21,7 @@ module.exports = {
     },
 
     async executeInteraction(interaction) {
-        await interaction.reply('pong!')
+        await interaction.reply(`pong! (Took ${Date.now() - interaction.createdAt}ms)`);
     },
 
     async execute(message) {

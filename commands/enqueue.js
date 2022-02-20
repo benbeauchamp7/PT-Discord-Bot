@@ -106,7 +106,18 @@ module.exports = {
         if (targetUser.id !== interaction.member.id) {
             interaction.reply(`We queued ${targetUser} into ${targetQueue}, they're ${common.getPlace(position)} in line`);
         } else {
-            interaction.reply(`Queued! You're ${common.getPlace(position)} in line`);
+            const d = new Date();
+            if (d.getDay() == 0) { // Sunday message
+                interaction.reply(`Queued! You're ${common.getPlace(position)} in line`);
+            } else if (d.getDay() < 6) { // Weekdays
+                interaction.reply(inPerson + str);
+            } else { // Saturday
+                // const inPerson = `Peer teachers don't typically work on Saturday, we'd be happy to see you here 2-5pm tomorrow or in the Peterson Building room 127 8am to 7pm during the week. `;
+                // const str = `We've still queued you though just in case! (You're ${common.getPlace(position)} in line)`
+                const inPerson = `Peer teachers are mostly in person during the week! We'd be happy to see you in PETR 127 8am to 7pm, and you can check the website to see who'll be there. `;
+                const str = `We've still queued you in case a peer teacher's online to help today. (You're ${common.getPlace(position)} in line)`
+                interaction.reply(inPerson + str);
+            }
         }
 
         // Drop a message in the queue-alerts channel

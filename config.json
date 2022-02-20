@@ -9,25 +9,26 @@
     "bot-alert-timeout": 10000,
 
     "room-inactivity-update": 300000,
-    "text-room-timeout-afterwarning": 300000,
-    "archive-timeout": 86400000,
-    "archive-timeout-update": 3600000,
     "channel-create-cooldown": 120000,
     "vq-expire": 900000,
-
+    
     "nr-cooldown": 1800000,
-
+    
     "elevated-roles": ["Peer Teacher", "Moderator", "Professor", "TA", "Off the Clock"],
     "admin-roles": ["Moderator"],
     "queue-list-amount": 10,
-
+    
     "personal-q-aliases": ["personal", "mine"],
-
+    
     "student-chan-specifier": "(TEMPORARY)",
     "text-room-timeout": 1200000,
-
+    "text-room-timeout-afterwarning": 300000,
+    
     "sticky-chan-specifier": "(PT)",
     "sticky-room-timeout": 7200000,
+
+    "archive-timeout": 86400000,
+    "archive-timeout-update": 3600000,
 
     "guildId": "731645274807599225",
     "create-room-id": "731922429508583486",

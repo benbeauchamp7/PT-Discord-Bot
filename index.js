@@ -29,12 +29,12 @@ const otherCommands = config['other-commands'];
 
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
+const { timedReply } = require('./custom_modules/replies.js');
 const rest = new REST({version: '9'}).setToken(process.env.BOT_TOKEN);
 
 // Imports all the commands from the commands folder
 bot.commands = new Discord.Collection();
 const commandList = [];
-const permsList = [];
 const permsDict = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith('.js'));
 
@@ -115,7 +115,7 @@ async function checkChanTimeout(categoryChannel) {
                     // Use the end command to erase the channel when time is up
                     textChan.send("Channel inactive, deleting...").then(deleteMessage => {
                         // bot.commands.get("end").execute(deleteMessage, '', { intervalMap: intervalMap });
-                        bot.commands.get("end").delete(deleteMessage.channel, { intervalMap: intervalMap }, true);
+                        bot.commands.get("end").delete(deleteMessage.channel, { warnMap: warnMap, intervalMap: intervalMap }, true);
                         warnMap.delete(categoryChannel.id);
                         logger.log(`Channel deleted`, `#${categoryChannel.name}`);
                     });
@@ -160,6 +160,7 @@ bot.on('ready', async () => {
     // Registers slash commands
 
     if (!process.env.TESTING) {
+        let permsList = [];
         try {
             logger.log('Refreshing application commands...', "none");
             
@@ -355,10 +356,17 @@ bot.on('messageCreate', msg => {
                 cooldown: cooldownUsers, 
                 queues: queues,
                 activeVQs: activeVQs,
-                updateQueues: updateQueues
+                updateQueues: updateQueues,
+                commandList: commandList,
+                permsDict: permsDict
             }
             
             isOnCooldown(msg.author.id); // Update channel creation cooldown
+
+            if (command == 'q' || command == 'dq') {
+                replies.timedReply(msg, `The bot no longer accepts \`!${command}\`, please use \`/${command}\` instead`, 10000);
+                return;
+            }
 
             bot.commands.get(command).execute(msg, args, options).then(didSucceed => {
                 // Add a cooldown for users who created a room
@@ -419,7 +427,9 @@ bot.on('interactionCreate', async interaction => {
             queues: queues,
             activeVQs: activeVQs,
             updateQueues: updateQueues,
-            warnMap: warnMap
+            warnMap: warnMap,
+            commandList: commandList,
+            permsDict: permsDict
         }
 
         await command.executeInteraction(interaction, options).catch(err => {
@@ -467,7 +477,7 @@ process.on('SIGTERM', async () => {
     clearInterval(saveTimer)
 
     if (process.env.TESTING == 'true') {
-        logger.log("Testing is enabled, not saving", "#system");
+        logger.log("Testing is enabled, not uploading queue", "#system");
         process.exit(0);
     }
 
