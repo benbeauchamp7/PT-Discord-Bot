@@ -3,6 +3,7 @@ const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const replies = require('../custom_modules/replies.js');
 const CommandError = require('../custom_modules/commandError.js');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 
 async function getUserFromMention(msg, mention) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
@@ -22,8 +23,46 @@ function report(anchor, user, target) {
 }
 
 module.exports = {
-    name: '#unmute',
+    name: 'unmute',
     description: 'server unmutes a student',
+    slashes: [new SlashCommandBuilder()
+        .setName('unmute')
+        .setDescription('Unmutes a student so that they can speak in a voice channel if perviously muted')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('The user to unmute')
+                .setRequired(true))
+    ],
+
+    permissions: {
+        unmute: {
+            permissions: [{
+                id: '750838675763494995',
+                type: 'ROLE',
+                permission: true
+            }]
+        }
+    },
+
+    async executeInteraction(interaction) {
+        const target = await interaction.guild.members.fetch(interaction.options.getUser('user'));
+        if (target.id === interaction.member.id) {
+            await interaction.reply({content: 'You can\'t unmute yourself (how did this happen, you might want to contact a moderator)', ephemeral: true});
+            throw new CommandError('/#unmute self', `${interaction.member}`);
+        } else if (common.roleCheck(target, config['elevated-roles'])) {
+            await interaction.reply({content: 'You can\'t unmute another elevated user, this action was recorded', ephemeral: true});
+            throw new CommandError(`/#unmute elevated ${target}`, `${interaction.member}`);
+        } else {
+            await interaction.reply(`The user ${target.nickname} with uid ${target.id} is now unmuted`);
+            target.voice.setMute(false);
+
+            logger.log(`WARN: /#unmute ${target}`, `${interaction.member}`);
+            interaction.guild.channels.resolve(config["infraction-chan-id"]).send(`<@&${config['bot-manager-role-id']}>s, ${interaction.member} used /#unmute on ${target}`);
+
+            return true;
+        }
+    },
+
     async execute(message, args) {
 
         if (!message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {

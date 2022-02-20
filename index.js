@@ -1,6 +1,6 @@
 // Require discord dependency and create the 'bot' object
 const Discord = require('discord.js');
-const bot = new Discord.Client({ partials: ['REACTION']});
+const bot = new Discord.Client({ partials: ['REACTION'], intents: 641 });
 
 const fs = require('fs');
 
@@ -27,12 +27,31 @@ const prefix = process.env.PREFIX
 const doModChat = config['do-moderate-chat'];
 const otherCommands = config['other-commands'];
 
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
+const { timedReply } = require('./custom_modules/replies.js');
+const rest = new REST({version: '9'}).setToken(process.env.BOT_TOKEN);
+
 // Imports all the commands from the commands folder
 bot.commands = new Discord.Collection();
+const commandList = [];
+const permsDict = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith('.js'));
+
 for (const file of commandFiles) {
     // Include command files
     const command = require(`./commands/${file}`);
+    if (command.slashes) {
+        for (const scmd of command.slashes) {
+            let jsoncmd = scmd.toJSON();
+            jsoncmd['default_permission'] = false;
+            commandList.push(jsoncmd);
+        }
+        
+        for (const [key, val] of Object.entries(command.permissions)) {
+            permsDict.set(key, val)
+        }
+    }
     bot.commands.set(command.name, command);
 }
 
@@ -48,7 +67,6 @@ let cooldownUsers = new Map();
 
 // Contains the queue system in the form {course -> [queue]}
 let queues = new Map();
-let cycles = new Map();
 
 let updateQueues = {};
 updateQueues.val = false;
@@ -59,7 +77,7 @@ function addChanInterval(categoryChannel) {
     warnMap.set(categoryChannel.id, null);
 
     // Create timer and store in intervalMap, accessible by the channelID
-    const intervalID = bot.setInterval(checkChanTimeout, config['room-inactivity-update'], categoryChannel);
+    const intervalID = setInterval(checkChanTimeout, config['room-inactivity-update'], categoryChannel);
     intervalMap.set(categoryChannel.id, intervalID);
 
     logger.log(`Timer added`, `#${categoryChannel.name}`);
@@ -73,9 +91,9 @@ async function checkChanTimeout(categoryChannel) {
     let textChan = undefined;
     let voiceChanCount = 0;
     for (const chan of categoryChannel.children) {
-        if (chan[1].type == 'text') {
+        if (chan[1].type == 'GUILD_TEXT') {
             textChan = chan[1];
-        } else if (chan[1].type == 'voice') {
+        } else if (chan[1].type == 'GUILD_VOICE') {
             voiceChanCount += chan[1].members.size;
         }
     }
@@ -96,7 +114,8 @@ async function checkChanTimeout(categoryChannel) {
                 const tID = setTimeout(() => {
                     // Use the end command to erase the channel when time is up
                     textChan.send("Channel inactive, deleting...").then(deleteMessage => {
-                        bot.commands.get("end").execute(deleteMessage, '', { intervalMap: intervalMap });
+                        // bot.commands.get("end").execute(deleteMessage, '', { intervalMap: intervalMap });
+                        bot.commands.get("end").delete(deleteMessage.channel, { warnMap: warnMap, intervalMap: intervalMap }, true);
                         warnMap.delete(categoryChannel.id);
                         logger.log(`Channel deleted`, `#${categoryChannel.name}`);
                     });
@@ -104,13 +123,17 @@ async function checkChanTimeout(categoryChannel) {
 
                 // Save the timeout in warnMap so it can be cleared later
                 warnMap.set(categoryChannel.id, tID);
-                textChan.send(`This chat will be deleted in ${config['text-room-timeout-afterwarning'] / 1000 / 60} minutes due to inactivity. Say something to delay the timer!`)
+                textChan.send(`This chat will be deleted in ${config['text-room-timeout-afterwarning'] / 1000 / 60} minutes due to inactivity. Say something to delay the timer!`).then(() => {
+                    
+                })
                 logger.log(`Inactivity warning`, `#${categoryChannel.name}`);
             }
 
             // Local message collector to reset inactivity
-            const collector = new Discord.MessageCollector(textChan, response => !response.author.bot, {"time": config['text-room-timeout-afterwarning']})
-            collector.on('collect', reply => {
+            new Discord.MessageCollector(textChan, {
+                'filter': response => !response.author.bot,
+                'time': config['text-room-timeout-afterwarning']
+            }).on('collect', reply => {
                 // Activity detected, cancel countdown
                 clearTimeout(warnMap.get(categoryChannel.id));
                 warnMap.set(categoryChannel.id, null);
@@ -132,8 +155,45 @@ function isOnCooldown(userID) {
 bot.on('ready', async () => {
 
     // Ping console when bot is ready
-    console.log('Bot Ready!');
     logger.log("Bot Ready", "none");
+
+    // Registers slash commands
+
+    if (!process.env.TESTING) {
+        let permsList = [];
+        try {
+            logger.log('Refreshing application commands...', "none");
+            
+            rest.put(
+                Routes.applicationGuildCommands(process.env.BOT_ID, config['guildId']),
+                { body: commandList }
+            ).then(response => {
+                let cname;
+                try {
+                    for (const command of response) { /// Get ids from the commands to set permissions
+                        cname = command['name'];
+                        permsDict.get(command['name'])['id'] = command['id']
+                        permsList.push({
+                            id: command['id'],
+                            permissions: permsDict.get(command['name'])['permissions']
+                        })
+                    }
+                } catch (err) {
+                    console.log(err);
+                    logger.log(`ERROR in ready for command ${cname}`, 'ERROR');
+                }
+                    
+    
+                bot.guilds.fetch(config['guildId']).then(rep => { /// Set permissions for the commands
+                    rep.commands.permissions.set({fullPermissions: permsList }).then(() => {
+                        logger.log('Done refreshing application commands!', 'none');
+                    }).catch(err => {console.log(err)});
+                })
+            })
+        } catch (err) {
+            logger.logError(err)
+        }
+    }
 
     
     // Initialize the queue map
@@ -145,7 +205,6 @@ bot.on('ready', async () => {
     if (process.env.TESTING == 'true') {
         queues = save.loadQueueLocalOnly();
         
-        console.log('Queue loaded from local');
         logger.log("Queue ready from local", "none");
 
         return;
@@ -169,40 +228,15 @@ bot.on('ready', async () => {
     // Loads queues from a saved file
     queues = await save.loadQueue();
     
-    console.log('Queue Ready!');
     logger.log("Queue Ready", "none");
 
 });
 
 bot.on('voiceStateUpdate', (oldMember, newMember) => {
     // Click to create room functionality
-    const channelJoined = newMember.channelID;
-    const channelLeft = oldMember.channelID;
+    const channelJoined = newMember.channelId;
     const user = newMember.member
 
-    // Cycle functionality (unimplemented)
-    if (channelLeft !== null && channelLeft !== undefined && channelLeft.name === "Cycling Room") {
-        // Remove from cycle
-        if (!cycles.has(msg.channel.id)) { cycles.set(voiceChan.id, []); }
-        let cycle = cycles.get(voiceChan.id);
-
-        const index = array.indexOf(voiceChan.id);
-        if (index > -1) {
-            cycle.splice(index, 1);
-        }
-
-        cycles.set(voiceChan.id, cycle);
-
-    } else if (channelJoined !== null && channelJoined !== undefined && channelJoined.name == "Cycling Room") {
-        // Record spot in cycle
-        if (!cycles.has(msg.channel.id)) { cycles.set(voiceChan.id, []); }
-        let cycle = cycles.get(voiceChan.id);
-        cycle.push(channelJoined.member);
-        cycles.set(voiceChan.id, cycle);
-
-    }
-
-    // If the user leaves a channel, do nothing (if not cycle)
     if (channelJoined === null || channelJoined === undefined) { return; }
 
     if (channelJoined == config['click-to-join-id']) {
@@ -255,13 +289,13 @@ bot.on('channelDelete', chan => {
         console.log(`Timer deleted from "#${chan.name}"`)
         logger.log("timer deleted", `#${chan.name}`)
 
-        bot.clearInterval(intervalMap.get(chan.id));
+        clearInterval(intervalMap.get(chan.id));
         intervalMap.delete(chan.id);
     }
 });
 
 // Handle message commands
-bot.on('message', msg => {
+bot.on('messageCreate', msg => {
     // Prevent recursion
     if (msg.author.bot) { return; }
     
@@ -287,8 +321,8 @@ bot.on('message', msg => {
                     const selected = modReplies[Math.floor(Math.random() * modReplies.length)];
 
                     msg.reply(selected).then(reply => {
-                        reply.delete({'timeout': timeout});
-                        msg.delete({'timeout': 0});
+                        setTimeout(() => { reply.delete(); }, timeout);
+                        setTimeout(() => { msg.delete(); }, 0);
                     });
 
                     console.log(`blocked ${msg.content}`, `${msg.author}`);
@@ -300,8 +334,19 @@ bot.on('message', msg => {
         }
     }
 
-    // Command handler
-    if (msg.content.startsWith(prefix) && !badWordFound) {
+    if (msg.content.startsWith('/')) {
+        msg.reply(`Your command ***was not completed***, when using slash commands, be sure that a context menu pops up (see <https://discord.com/channels/731645274807599225/745026000378921093/905573132730003497>)`).then(reply => {
+            setTimeout(() => { msg.delete().catch(() => { console.log("Message already deleted")});; }, 1*60*1000);
+            setTimeout(() => { reply.delete().catch(() => { console.log("Message already deleted")});; }, 1*60*1000);
+        });
+
+    } else if (msg.content.startsWith('\\')) {
+        msg.reply(`Your command ***was not completed***, did you mean \`/${command}\` instead of \`\\${command}\`?`).then(reply => {
+            setTimeout(() => { msg.delete().catch(() => { console.log("Message already deleted")}); }, 1*60*1000);
+            setTimeout(() => { reply.delete().catch(() => { console.log("Message already deleted")});; }, 1*60*1000);
+        });
+
+    } else if (msg.content.startsWith(prefix) && !badWordFound) { // Command handler
         try {
             // Just a conglomeration of stuff the commands might need to execute
             const options = {
@@ -311,17 +356,30 @@ bot.on('message', msg => {
                 cooldown: cooldownUsers, 
                 queues: queues,
                 activeVQs: activeVQs,
-                cycles: cycles,
-                updateQueues: updateQueues
+                updateQueues: updateQueues,
+                commandList: commandList,
+                permsDict: permsDict
             }
             
             isOnCooldown(msg.author.id); // Update channel creation cooldown
+
+            if (command == 'q' || command == 'dq') {
+                replies.timedReply(msg, `The bot no longer accepts \`!${command}\`, please use \`/${command}\` instead`, 10000);
+                return;
+            }
 
             bot.commands.get(command).execute(msg, args, options).then(didSucceed => {
                 // Add a cooldown for users who created a room
                 if (didSucceed && command === "create") {
                     cooldownUsers.set(msg.author.id, Date.now());
                 }
+
+                if (command != 'say') {
+                    msg.reply(`The bot now prefers slash commands! Use /${command} instead next time!`).then(reply => {
+                        setTimeout(() => { reply.delete(); }, 1*60*1000);
+                    });
+                }
+
             }).catch(err => {
                 if (err instanceof CommandError) {
                     // Catch CommandErrors as user errors
@@ -337,7 +395,7 @@ bot.on('message', msg => {
 
             // Catch invalid commands
             if (!otherCommands.includes(command)) {
-                replies.timedReply(msg, 'you have written an invalid command, maybe you made a typo?', config['bot-alert-timeout']);
+                replies.timedReply(msg, 'You have written an invalid command, maybe you made a typo?', config['bot-alert-timeout']);
 
                 logger.log(`ERROR: base error thrown CONTENT:${msg.content} |||| CHAN:#${msg.channel.name}`, `${msg.author}`);
             }
@@ -350,24 +408,45 @@ bot.on('message', msg => {
     
 });
 
-// Create shutdown signal every 24 hours so that the bot reboots at night
-// Currently resets at 7:45am
-schedule.scheduleJob('45 7 * * *', function() {
-    // Use SIGUSR1 to clear the queue
-    process.emit('SIGUSR1');
-});
+// Handle interaction commands
+bot.on('interactionCreate', async interaction => {
+    if (!interaction.isCommand()) return;
 
-// Save the queues every 15 minutes excluding midnight to 8am and saturdays
-let saveTimer = setInterval(() => {
-   let d = new Date();
-   console.log(`Test: ${updateQueues.val}`);
-   if (d.getDay() == 6 || !(d.getHours() >= 8) || updateQueues.val === false) { return; }
+    const command = bot.commands.get(interaction.commandName);
+    
+    if (!command) {
+        await interaction.reply({content: "You have written an invalid command, maybe you made a typo?", ephemeral: true});
+        return;
+    }
 
-   save.saveQueue(queues);
-   save.uploadQueue();
-   updateQueues.val = false;
+    try {
+        const options = {
+            bot: bot,
+            intervalMap: intervalMap,
+            cooldown: cooldownUsers, 
+            queues: queues,
+            activeVQs: activeVQs,
+            updateQueues: updateQueues,
+            warnMap: warnMap,
+            commandList: commandList,
+            permsDict: permsDict
+        }
 
-}, 1000 * 60 * 15)
+        await command.executeInteraction(interaction, options).catch(err => {
+            if (err instanceof CommandError) {
+                // Catch CommandErrors as user errors
+                logger.log(err.message, err.user)
+            } else {
+                // Catch other errors as programming errors
+                logger.logError(err);
+            }
+            
+        });
+    } catch (err) {
+        console.log(err);
+        await interaction.reply({content: 'Something went wrong...', ephemeral: true})
+    }
+})
 
 process.on("SIGUSR1", () => {
     logger.log("SIGUSR1 sent, sending SIGTERM for shutdown and clearing queue", "#system");
@@ -398,7 +477,7 @@ process.on('SIGTERM', async () => {
     clearInterval(saveTimer)
 
     if (process.env.TESTING == 'true') {
-        logger.log("Testing is enabled, not saving", "#system");
+        logger.log("Testing is enabled, not uploading queue", "#system");
         process.exit(0);
     }
 
@@ -426,5 +505,27 @@ process.on('SIGTERM', async () => {
     process.exit(0);
 
 });
+
+process.on('unhandledRejection', error => {
+    console.log('Unhandled promise rejection', error);
+});
+
+// Create shutdown signal every 24 hours so that the bot reboots at night
+// Currently resets at 7:45am
+schedule.scheduleJob('45 7 * * *', function() {
+    // Use SIGUSR1 to clear the queue
+    process.emit('SIGUSR1');
+});
+
+// Save the queues every 15 minutes excluding midnight to 8am and saturdays
+let saveTimer = setInterval(() => {
+   let d = new Date();
+   if (d.getDay() == 6 || !(d.getHours() >= 8) || updateQueues.val === false) { return; }
+
+   save.saveQueue(queues);
+   save.uploadQueue();
+   updateQueues.val = false;
+
+}, 1000 * 60 * 15)
 
 bot.login(process.env.BOT_TOKEN);

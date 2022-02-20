@@ -5,6 +5,7 @@ const replies = require('../custom_modules/replies.js');
 const save = require('../custom_modules/save.js');
 const CommandError = require('../custom_modules/commandError.js');
 const common = require('../custom_modules/common.js')
+const { SlashCommandBuilder } = require('@discordjs/builders');
 
 async function checkMention(mention, msg) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
@@ -16,13 +17,122 @@ async function checkMention(mention, msg) {
     return false;
 }
 
-function roleCheck(msg, roles) {
-    return msg.member.roles.cache.find(r => roles.includes(r.name))
-}
-
 module.exports = {
     name: 'q',
     description: 'puts a student into a queue',
+    slashes: [
+        new SlashCommandBuilder()
+            .setName('q')
+            .setDescription('Adds you to the queue for the channel you\'re in')
+            .addUserOption(option =>
+                option.setName('user')
+                    .setDescription('(PT use only) The person to queue')
+                    .setRequired(false))
+            .addStringOption(option => 
+                option.setName('into')
+                    .setDescription('The course to queue into (ex. 121 or 314java)')
+                    .setRequired(false))
+            .addIntegerOption(option => 
+                option.setName('at')
+                    .setDescription('(PT use only, requires "user" argument) where in line the user can go')
+                    .setRequired(false))
+    ],
+
+    permissions: {
+        q: {
+            permissions: [{
+                id: '804540323367354388',
+                type: 'ROLE',
+                permission: true
+            }]
+        }
+    },
+
+    async executeInteraction(interaction, data) {
+        let queues = data.queues;
+        const user = interaction.options.getUser('user');
+        const into = interaction.options.getString('into');
+        const at = interaction.options.getInteger('at');
+        let targetUser = (user)? user : interaction.member;
+        
+        // Do validation
+        if ((user || at) && !common.roleCheck(interaction.member, config['elevated-roles'])) { // Check permissions for arguments
+            await interaction.reply({content: 'You don\'t have permission to use the "user" or "at" parameters', ephemeral: true});
+            throw new CommandError("/q insufficient permissions", `${interaction.member}`)
+        } else if (into && !config['course-emotes'].includes(into)) { // Check if "into" is invalid
+            await interaction.reply({content: '"into" argument requires a single course code argument such as 121 or 312', ephemeral: true});
+            throw new CommandError("/q into has invalid target", `${interaction.member}`);
+        } else if (!into && !config['course-emotes'].includes(interaction.channel.name.substring(5))) {
+            await interaction.reply({content: 'You can only use /q without "into" in a course channel such as csce-121 or csce-314java', ephemeral: true});
+            throw new CommandError("/q not in course channel", `${interaction.member}`);
+        } 
+        
+        let targetQueue = (into)? common.parseEmoteToChannel(into) : interaction.channel.name;
+        if (!queues.has(targetQueue)) { queues.set(targetQueue, []); } // Set queue if empty
+        if (at && (at > queues.get(targetQueue).length || at <= 0)) { // Check if 'at' is out of bounds
+            await interaction.reply({content: `"at" argument ${at} is out of bounds for a queue of length ${queues.get(targetQueue).length}`, ephemeral: true});
+            throw new CommandError("/q into has invalid target", `${interaction.member}`);
+        }
+
+        
+        // Check if the target is already queued
+        for (let [course, list] of queues) {
+            for (let i = 0; i < list.length; i++) {
+                if (list[i].user === targetUser.id) {
+                    if (targetUser.id !== interaction.member.id) {
+                        interaction.reply({content: `${targetUser} is already queued in ${course}, so we couldn't queue them into ${targetQueue}`, ephemeral: true});
+                    } else {
+                        interaction.reply({content: `You're already queued in ${course}, so we couldn't queue you into ${targetQueue}`, ephemeral: true});
+                    }
+                    throw new CommandError(`/q ${targetUser} already queued in ${course}`, `${interaction.member}`);
+                }
+            }
+        }
+
+        // Put the user in the queue
+        let position = (at)? at : queues.get(targetQueue).length+1;
+        if (at) { 
+            queues.get(targetQueue).splice(at-1, 0, {user: targetUser.id, time: "Manual", ready: true, readyTime: Date.now()});
+        } else { 
+            queues.get(targetQueue).push({user: targetUser.id, time: Date.now(), ready: true, readyTime: Date.now()});
+        }
+
+        // Give the user the queued role
+        interaction.guild.members.fetch(targetUser.id).then(u => {
+            u.roles.add(config['role-q-code']);
+        });
+
+        // Respond to the command
+        if (targetUser.id !== interaction.member.id) {
+            interaction.reply(`We queued ${targetUser} into ${targetQueue}, they're ${common.getPlace(position)} in line`);
+        } else {
+            const d = new Date();
+            if (d.getDay() == 0) { // Sunday message
+                interaction.reply(`Queued! You're ${common.getPlace(position)} in line`);
+            } else if (d.getDay() < 6) { // Weekdays
+                interaction.reply(inPerson + str);
+            } else { // Saturday
+                // const inPerson = `Peer teachers don't typically work on Saturday, we'd be happy to see you here 2-5pm tomorrow or in the Peterson Building room 127 8am to 7pm during the week. `;
+                // const str = `We've still queued you though just in case! (You're ${common.getPlace(position)} in line)`
+                const inPerson = `Peer teachers are mostly in person during the week! We'd be happy to see you in PETR 127 8am to 7pm, and you can check the website to see who'll be there. `;
+                const str = `We've still queued you in case a peer teacher's online to help today. (You're ${common.getPlace(position)} in line)`
+                interaction.reply(inPerson + str);
+            }
+        }
+
+        // Drop a message in the queue-alerts channel
+        data['bot'].channels.fetch(config['q-alert-id']).then(channel => {
+            // Roles are same as channel name, but with CSCE capitalized
+            const tag = channel.guild.roles.cache.find(role => role.name === `CSCE-${targetQueue.substring(5)}`).id;
+            channel.send(`<@&${tag}>, <@${targetUser.id}> has joined the ${targetQueue} queue and needs *your* help!`);
+        });
+
+        save.saveQueue(queues);
+        data.updateQueues.val = true;
+
+        return true;
+    },
+
     async execute(msg, args, options) {
         let queues = options.queues;
         let bot = options.bot;
@@ -32,7 +142,7 @@ module.exports = {
         let position = -1;
 
         // Check for elevated user to allow args
-        if (roleCheck(msg, config['elevated-roles']) && args.length !== 0) {
+        if (common.roleCheck(msg.member, config['elevated-roles']) && args.length !== 0) {
             
             // If a valid mention
             let mentionID = await checkMention(args[0], msg);
@@ -123,7 +233,7 @@ module.exports = {
         if (position === -1) { 
             queues.get(course).push({user: user.id, time: Date.now(), ready: true, readyTime: Date.now()});
         } else {
-            queues.get(course).splice(position-1, 0, {user: user.id, time: "Manual", ready: true, readyTime: Date.now()});
+            queues.get(course).splice(position-1, 0, {user: user.id, time: "Manual", ready: true, readyTime: 0});
         }
 
         // Give them the queued role
@@ -134,11 +244,11 @@ module.exports = {
         if (adminQ) {
             logger.log(`!q <@${user.id}> into ${course}`, `${msg.author}`);
             msg.react('✅')
-            // msg.reply(`we queued ${msg.guild.members.cache.get(user.id)} into ${qTargetPretty}, they're ${position} in line`);
+            // msg.reply(`We queued ${msg.guild.members.cache.get(user.id)} into ${qTargetPretty}, they're ${position} in line`);
         } else {
             logger.log(`!q self into ${course}`, `${msg.author}`)
             msg.react('✅')
-            // msg.reply(`queued! You're ${position} in line`);
+            // msg.reply(`Queued! You're ${position} in line`);
         }
 
         // Check to see if a course queue

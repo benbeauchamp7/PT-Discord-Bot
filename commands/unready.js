@@ -5,6 +5,7 @@ const replies = require('../custom_modules/replies.js');
 const save = require('../custom_modules/save.js');
 const CommandError = require('../custom_modules/commandError.js');
 const common = require('../custom_modules/common.js');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 
 function roleCheck(msg, roles) {
     return msg.member.roles.cache.find(r => roles.includes(r.name))
@@ -13,6 +14,117 @@ function roleCheck(msg, roles) {
 module.exports = {
     name: 'nr',
     description: 'sets a person\'s queue status to unready',
+    slashes: [
+        new SlashCommandBuilder()
+            .setName('nr')
+            .setDescription('Sets your queue status to unready')
+            .addUserOption(option =>
+                option.setName('user')
+                    .setDescription('(PT use only) The person to mark as unready')
+                    .setRequired(false))
+            .addStringOption(option => 
+                option.setName('multiple-users')
+                    .setDescription('(PT use only) Mention multiple users to unready them')
+                    .setRequired(false))
+    ],
+
+    permissions: {
+        nr: {
+            permissions: [{
+                id: '804540323367354388',
+                type: 'ROLE',
+                permission: true
+            }]
+        }
+    },
+
+    async executeInteraction(interaction, data) {
+        let queues = data.queues;
+        let target = interaction.options.getUser('user');
+        let targetMany = interaction.options.getString('multiple-users');
+
+        // Permissions check
+        if ((target || targetMany) && !common.roleCheck(interaction.member, config['elevated-roles'])) {
+            await interaction.reply({content: 'You don\'t have permission to unready other users!', ephemeral: true});
+            throw new CommandError('/ur insufficient permissions', `${interaction.member}`);
+        }
+
+        // If no args used, r self
+        if (!(target || targetMany)) { target = interaction.member; }
+
+        // Add target to the dq list along with any other specified users
+        let targetList = (target)? [target.id] : [];
+        if (targetMany) {
+            for (const user of targetMany.replace('><', '> <').split(' ')) {
+                console.log(user);
+                if ((user.startsWith('<@') || user.startsWith('<@!')) && user.endsWith('>')) {
+                    const idStart = user.split('').findIndex(e => e >= '0' && e <= '9');
+                    targetList.push(user.substring(idStart, user.length-1));
+                }
+            }
+        }
+
+        let found = false;
+        let unreadyAllIds = "";
+        let unreadyPrintString = "";
+        for (let id of targetList) {
+            unreadyAllIds += ` <@${id}>`
+            for (const [course, queue] of queues) {
+                for (let i = 0; i < queue.length; i++) {
+                    if (queue[i].user === id) {
+
+                        // unReady the user
+                        if (queue[i].readyTime + config['nr-cooldown'] < Date.now()) {
+                            queue[i].ready = false;
+                            found = true;
+                        } else if (target === interaction.member) {
+                            await interaction.reply({content: `you cannot use \`!nr\` until ${common.parseTime(queue[i].readyTime + config['nr-cooldown'])}`, ephemeral: true});
+                            throw new CommandError("!nr on cooldown", `${interaction.member}`);
+                        } else if (targetList.length === 1) {
+                            await interaction.reply({content: `<@${id}> cannot be marked as not ready until ${common.parseTime(queue[i].readyTime + config['nr-cooldown'])}`, ephemeral: true});
+                            throw new CommandError(`!nr <@${id}> on cooldown`, `${interaction.member}`);
+                        } else {
+                            break;
+                        }
+
+                        // Record the data of the readied member to output later
+                        unreadyPrintString += `<@${id}>\n`;
+                    }
+                }
+            }
+        }
+
+        save.saveQueue(queues);
+        data.updateQueues.val = true;
+
+        // Respond to the user
+        if (found) {
+            if (target?.id === interaction.member.id) {
+                await interaction.reply(`Done!`);
+                logger.log(`/nr self`, `${interaction.member}`);
+            } else if (targetList.length === 1) {
+                await interaction.reply(`<@${targetList[0]}> is now marked as not ready`);
+                logger.log(`/nr <@${targetList[0]}>`, `${interaction.member}`);
+            } else {
+                await interaction.reply(`> We marked the following users as not ready\n${unreadyPrintString}`);
+                logger.log(`/nr${unreadyAllIds}`, `${interaction.member}`);
+            }    
+        } else {
+            if (target?.id === interaction.member.id) {
+                await interaction.reply({content: 'You were not in a queue (so no action is required)', ephemeral: true});
+                throw new CommandError('/nr self not in queue', `${interaction.member}`);
+            } else if (targetList.length === 1) {
+                await interaction.reply({content: `<@${targetList[0]}> wasn't in a queue`, ephemeral: true});
+                throw new CommandError(`/nr <@${targetList[0]}> not in queue`, `${interaction.member}`);
+            } else {
+                await interaction.reply({content: `None of${unreadyAllIds} were in a queue`, ephemeral: true});
+                throw new CommandError(`/nr nobody from${unreadyAllIds}`, `${interaction.member}`);
+            }
+        }
+
+        return true;
+    },
+
     async execute(msg, args, options) {
         let queues = options.queues;
 

@@ -1,3 +1,5 @@
+// FILE CAN BE DELETED
+
 const Discord = require('discord.js');
 
 module.exports = {
@@ -52,7 +54,7 @@ module.exports = {
 \`->\` If the bot is acting up, the server is on fire, or something is otherwise broken, DM <@335481074236915712> and he'll try to get everything sorted out.`}
                 )
 
-        message.channel.send(embed);
+        message.channel.send({embeds: [embed]});
 
         return true;
         

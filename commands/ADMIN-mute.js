@@ -3,6 +3,7 @@ const fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
 const replies = require('../custom_modules/replies.js');
 const CommandError = require('../custom_modules/commandError.js');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 
 async function getUserFromMention(msg, mention) {
     if (mention.match(/^<@!?(\d+)>$/g)) {
@@ -22,8 +23,47 @@ function report(anchor, user, target) {
 }
 
 module.exports = {
-    name: '#mute',
+    name: 'mute',
     description: 'server mutes a student',
+    slashes: [new SlashCommandBuilder()
+        .setName('mute')
+        .setDescription('Mutes a student so that they can\'t speak in a voice channel')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('The user to mute')
+                .setRequired(true))
+    ],
+
+    permissions: {
+        mute: {
+            permissions: [{
+                id: '750838675763494995',
+                type: 'ROLE',
+                permission: true
+            }]
+        }
+    },
+
+    async executeInteraction(interaction) {
+        const target = await interaction.guild.members.fetch(interaction.options.getUser('user'));
+        if (target.id === interaction.member.id) {
+            await interaction.reply({content: 'You can\'t mute yourself', ephemeral: true});
+            throw new CommandError('/#mute self', `${interaction.member}`);
+        } else if (common.roleCheck(target, config['elevated-roles'])) {
+            await interaction.reply({content: 'You can\'t mute another elevated user, this action was recorded', ephemeral: true});
+            throw new CommandError(`/#mute elevated ${target}`, `${interaction.member}`);
+        } else {
+            let isMute = target.voice.serverMute;
+            await interaction.reply(`The user ${target.nickname} with uid ${target.id} is now ${(!isMute)? '***un***muted' : 'muted'}`);
+            target.voice.setMute(!isMute); // Toggle the mute
+
+            logger.log(`WARN: /#mute ${target}`, `${interaction.member}`);
+            interaction.guild.channels.resolve(config["infraction-chan-id"]).send(`<@&${config['bot-manager-role-id']}>s, ${interaction.member} used /#mute on ${target} (MUTE is now ${!isMute})`);
+
+            return true;
+        }
+    },
+
     async execute(message, args) {
 
         if (!message.member.roles.cache.find(r => config['elevated-roles'].includes(r.name))) {

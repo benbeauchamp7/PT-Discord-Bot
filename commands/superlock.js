@@ -1,3 +1,5 @@
+// FILE CAN BE DELETED
+
 const fs = require('fs');
 const logger = require('../custom_modules/logging.js');
 const config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
@@ -63,8 +65,8 @@ module.exports = {
                         }
 
                         // Apply changes
-                        voiceChan.overwritePermissions(perms).then(() => {
-                            message.reply("superlocked! Not even staff can join this channel (except for Mods)");
+                        voiceChan.permissionOverwrites.set(perms).then(() => {
+                            message.reply("Superlocked! Not even staff can join this channel (except for Mods)");
                             logger.log(`superlocked #${parent.name}`, `${message.author}`);
                             
                         });

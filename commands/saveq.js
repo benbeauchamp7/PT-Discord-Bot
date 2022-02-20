@@ -10,6 +10,6 @@ module.exports = {
         save.saveQueue(queues);
         options.updateQueues.val = true;
 
-        message.reply("queues saved!")
+        message.reply("Queues saved!")
     }
 }

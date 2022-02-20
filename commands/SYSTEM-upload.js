@@ -17,7 +17,7 @@ module.exports = {
 
         save.saveLogs();
         save.uploadQueue();
-        message.reply("confirmed, saving data to S3");
+        message.reply("Confirmed, saving data to S3");
         logger.log("!$upload called", message.author.id);
         
         return true;
