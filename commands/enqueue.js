@@ -68,9 +68,16 @@ module.exports = {
         } 
         
         let targetQueue = (into)? common.parseEmoteToChannel(into) : interaction.channel.name;
-        if (!queues.has(targetQueue)) { queues.set(targetQueue, []); } // Set queue if empty
-        if (at && (at > queues.get(targetQueue).length || at <= 0)) { // Check if 'at' is out of bounds
-            await interaction.reply({content: `"at" argument ${at} is out of bounds for a queue of length ${queues.get(targetQueue).length}`, ephemeral: true});
+
+        const tr = targetQueue.substring(5);
+        const hyphen = Array.from(tr).findIndex(c => c.toLowerCase() !== c.toUpperCase());
+        const course = (hyphen !== -1 && !tr.includes('-'))? tr.slice(0, hyphen) + "-" + tr.slice(hyphen) : tr;
+
+        const queue = "csce-" + course;
+
+        if (!queues.has(queue)) { queues.set(queue, []); } // Set queue if empty
+        if (at && (at > queues.get(queue).length || at <= 0)) { // Check if 'at' is out of bounds
+            await interaction.reply({content: `"at" argument ${at} is out of bounds for a queue of length ${queues.get(queue).length}`, ephemeral: true});
             throw new CommandError("/q into has invalid target", `${interaction.member}`);
         }
 
@@ -80,9 +87,9 @@ module.exports = {
             for (let i = 0; i < list.length; i++) {
                 if (list[i].user === targetUser.id) {
                     if (targetUser.id !== interaction.member.id) {
-                        interaction.reply({content: `${targetUser} is already queued in ${course}, so we couldn't queue them into ${targetQueue}`, ephemeral: true});
+                        interaction.reply({content: `${targetUser} is already queued in ${course}, so we couldn't queue them into ${queue}`, ephemeral: true});
                     } else {
-                        interaction.reply({content: `You're already queued in ${course}, so we couldn't queue you into ${targetQueue}`, ephemeral: true});
+                        interaction.reply({content: `You're already queued in ${course}, so we couldn't queue you into ${queue}`, ephemeral: true});
                     }
                     throw new CommandError(`/q ${targetUser} already queued in ${course}`, `${interaction.member}`);
                 }
@@ -90,11 +97,11 @@ module.exports = {
         }
 
         // Put the user in the queue
-        let position = (at)? at : queues.get(targetQueue).length+1;
+        let position = (at)? at : queues.get(queue).length+1;
         if (at) { 
-            queues.get(targetQueue).splice(at-1, 0, {user: targetUser.id, time: "Manual", ready: true, readyTime: Date.now()});
+            queues.get(queue).splice(at-1, 0, {user: targetUser.id, time: "Manual", ready: true, readyTime: Date.now()});
         } else { 
-            queues.get(targetQueue).push({user: targetUser.id, time: Date.now(), ready: true, readyTime: Date.now()});
+            queues.get(queue).push({user: targetUser.id, time: Date.now(), ready: true, readyTime: Date.now()});
         }
 
         // Give the user the queued role
@@ -104,7 +111,7 @@ module.exports = {
 
         // Respond to the command
         if (targetUser.id !== interaction.member.id) {
-            interaction.reply(`We queued ${targetUser} into ${targetQueue}, they're ${common.getPlace(position)} in line`);
+            interaction.reply(`We queued ${targetUser} into ${queue}, they're ${common.getPlace(position)} in line`);
         } else {
             const d = new Date();
             if (d.getDay() == 0) { // Sunday message
@@ -123,11 +130,12 @@ module.exports = {
         // Drop a message in the queue-alerts channel
         data['bot'].channels.fetch(config['q-alert-id']).then(channel => {
             // Roles are same as channel name, but with CSCE capitalized
-            const tag = channel.guild.roles.cache.find(role => role.name === `CSCE-${targetQueue.substring(5)}`).id;
-            channel.send(`<@&${tag}>, <@${targetUser.id}> has joined the ${targetQueue} queue and needs *your* help!`);
+            const tag = channel.guild.roles.cache.find(role => role.name === `CSCE-${course}`).id;
+            channel.send(`<@&${tag}>, <@${targetUser.id}> has joined the ${queue} queue and needs *your* help!`);
         });
 
         save.saveQueue(queues);
+        console.log(queues)
         data.updateQueues.val = true;
 
         return true;
